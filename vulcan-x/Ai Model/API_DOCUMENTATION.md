@@ -20,7 +20,8 @@
 - [5. Key Pool Status](#5-key-pool-status)
 - [6. Key Pool Reset](#6-key-pool-reset)
 - [7. Habitat Stress-Test Simulator](#7-habitat-stress-test-simulator)
-- [8. NASA PSI Datasets Catalog](#8-nasa-psi-datasets-catalog)
+- [8. Planetary & Habitat 3D Hazard Evaluation](#8-planetary--habitat-3d-hazard-evaluation)
+- [9. NASA PSI Datasets Catalog](#9-nasa-psi-datasets-catalog)
 - [Error Responses](#error-responses)
 - [Environment Variables](#environment-variables)
 
@@ -45,6 +46,7 @@ The system manages **5 OpenRouter API keys** with automatic failover. If a key h
 | `GET` | `/api/v1/ai/key-status` | API key pool diagnostics |
 | `POST` | `/api/v1/ai/key-reset` | Reset all key pool statuses |
 | `POST` | `/api/v1/simulator/stress-test` | Habitat fire safety simulation |
+| `POST` | `/api/v1/simulator/hazard-evaluation` | 3D canvas planetary hazard parameters |
 | `GET` | `/api/v1/datasets` | NASA PSI datasets catalog |
 
 ---
@@ -353,7 +355,88 @@ curl -X POST http://localhost:4000/api/v1/simulator/stress-test \
 
 ---
 
-## 8. NASA PSI Datasets Catalog
+## 8. Planetary & Habitat 3D Hazard Evaluation
+
+**`POST /api/v1/simulator/hazard-evaluation`**  
+*(Alias: `POST /api/v1/simulator/physics-engine`)*
+
+Evaluates the exact fire hazard based on planetary environment physics (Lunar Base 0.166g, Mars 0.38g, ISS 0g, Earth 1g), oxygen mole fraction, pressure, and material combustibility. Outputs exact 3D canvas trigger parameters (geometry type, spread velocity, particle explosion density, hex color, flashing alert) and an authoritative NASA PSI scientific explanation.
+
+### Request Body
+
+```json
+{
+  "target_planet_or_habitat": "lunar_base",
+  "oxygen_concentration": 32.0,
+  "pressure_psi": 9.5,
+  "material_type": "PMMA Acrylic"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `target_planet_or_habitat` | `string` | ✅ | `"lunar_base"` (or `"lunar"`), `"mars_rover"` (or `"mars"`), `"iss"`, `"earth"` |
+| `oxygen_concentration` | `number` | ✅ | Cabin oxygen percentage (0.0 - 100.0%) |
+| `pressure_psi` | `number` | ✅ | Cabin pressure in psi (positive number, e.g. 8.2 - 14.7 psi) |
+| `material_type` | `string` | ✅ | Material name (e.g. `"PMMA Acrylic"`, `"Nomex Aramid"`, `"Kapton"`, `"Cotton"`) |
+
+### Success Response `200 OK`
+
+```json
+{
+  "success": true,
+  "simulation_metadata": {
+    "target_planet_or_habitat": "lunar_base",
+    "gravity_g": 0.166,
+    "hazard_score_percentage": 88.5,
+    "safety_status": "CRITICAL_HAZARD"
+  },
+  "visual_3d_trigger_params": {
+    "render_flame": true,
+    "flame_geometry_type": "spherical_blue_core",
+    "flame_spread_velocity_mm_s": 5.2,
+    "risk_color_hex": "#FF3333",
+    "particle_explosion_density": 1500,
+    "warning_flash_ui": true
+  },
+  "scientific_explanation": "In a lunar habitat environment with 32% oxygen and 0.166g gravity, PMMA acrylic exhibits rapid spherical flame propagation without buoyant plume detachment, drastically increasing localized thermal buildup."
+}
+```
+
+### Response Fields Breakdown
+
+#### `simulation_metadata`
+| Field | Type | Description |
+|-------|------|-------------|
+| `target_planet_or_habitat` | `string` | Normalized environment ID (`"lunar_base"`, `"mars_rover"`, `"iss"`, `"earth"`) |
+| `gravity_g` | `number` | Gravity constant: Lunar = 0.166, Mars = 0.38, ISS = 0.0, Earth = 1.0 |
+| `hazard_score_percentage` | `number` | Composite hazard index from 0.0% to 100.0% |
+| `safety_status` | `string` | `"NOMINAL"`, `"ELEVATED_RISK"`, or `"CRITICAL_HAZARD"` |
+
+#### `visual_3d_trigger_params` (Drives 3D Canvas)
+| Field | Type | Description |
+|-------|------|-------------|
+| `render_flame` | `boolean` | `true` if ignition/combustion can initiate and sustain |
+| `flame_geometry_type` | `string` | 3D flame mesh/shader geometry: `"spherical_blue_core"`, `"hemispherical_spread"`, `"buoyant_plume"`, `"smoldering_surface"`, `"ventilation_driven_trail"`, `"micro_droplet_cool_flame"`, `"none"` |
+| `flame_spread_velocity_mm_s` | `number` | Physical flame front propagation speed across the solid surface in mm/s |
+| `risk_color_hex` | `string` | Hex color code for 3D lights and particles: `#10B981` (Safe), `#F59E0B` (Warning), `#FF3333` (Critical) |
+| `particle_explosion_density` | `number` | Density of 3D smoke/spark emitter particles (90 to 2000+) |
+| `warning_flash_ui` | `boolean` | Flag to trigger red flashing HUD warning indicators in the 3D cockpit |
+
+#### `scientific_explanation`
+Peer-reviewed aerospace combustion synthesis connecting NASA PSI investigations (BASS, Saffire, ACME, FLEX) with the exact gravity, oxygen, pressure, and material parameters.
+
+### cURL
+
+```bash
+curl -X POST http://localhost:4000/api/v1/simulator/hazard-evaluation \
+  -H "Content-Type: application/json" \
+  -d '{"target_planet_or_habitat": "lunar_base", "oxygen_concentration": 32.0, "pressure_psi": 9.5, "material_type": "PMMA Acrylic"}'
+```
+
+---
+
+## 9. NASA PSI Datasets Catalog
 
 **`GET /api/v1/datasets`**
 

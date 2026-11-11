@@ -5,6 +5,7 @@ import { env } from './config/env';
 import { AiProviderService } from './services/aiProviderService';
 import { RagService } from './services/ragService';
 import { PhysicsSimulatorService } from './services/physicsSimulatorService';
+import { PhysicsEngineService } from './services/physicsEngineService';
 import { AiController } from './controllers/aiController';
 import { SimulatorController } from './controllers/simulatorController';
 import { createMainRouter } from './routes';
@@ -27,10 +28,11 @@ app.use(
 const aiProviderService = new AiProviderService();
 const ragService = new RagService(aiProviderService);
 const physicsSimulatorService = new PhysicsSimulatorService(aiProviderService);
+const physicsEngineService = new PhysicsEngineService(aiProviderService);
 
 // Initialize Controllers
 const aiController = new AiController(ragService, aiProviderService);
-const simulatorController = new SimulatorController(physicsSimulatorService);
+const simulatorController = new SimulatorController(physicsSimulatorService, physicsEngineService);
 
 // Mount Application Routes
 const mainRouter = createMainRouter(aiController, simulatorController);

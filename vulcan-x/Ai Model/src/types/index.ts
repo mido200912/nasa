@@ -70,3 +70,46 @@ export interface KeyPoolStatus {
   keys: KeySlotInfo[];
 }
 
+// ─── 3D Physics Engine Types ─────────────────────────────────────────────────
+
+export type HazardSafetyStatus = 'NOMINAL' | 'ELEVATED_RISK' | 'CRITICAL_HAZARD';
+
+export type FlameGeometryType =
+  | 'spherical_blue_core'
+  | 'hemispherical_spread'
+  | 'buoyant_plume'
+  | 'smoldering_surface'
+  | 'ventilation_driven_trail'
+  | 'micro_droplet_cool_flame'
+  | 'none';
+
+export interface PhysicsEngineRequest {
+  target_planet_or_habitat: EnvironmentType;
+  oxygen_concentration: number;
+  pressure_psi: number;
+  material_type: string;
+}
+
+export interface SimulationMetadata {
+  target_planet_or_habitat: EnvironmentType;
+  gravity_g: number;
+  hazard_score_percentage: number;
+  safety_status: HazardSafetyStatus;
+}
+
+export interface Visual3DTriggerParams {
+  render_flame: boolean;
+  flame_geometry_type: FlameGeometryType;
+  flame_spread_velocity_mm_s: number;
+  risk_color_hex: string;
+  particle_explosion_density: number;
+  warning_flash_ui: boolean;
+}
+
+export interface PhysicsEngineResponse {
+  success: boolean;
+  simulation_metadata: SimulationMetadata;
+  visual_3d_trigger_params: Visual3DTriggerParams;
+  scientific_explanation: string;
+}
+

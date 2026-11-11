@@ -22,6 +22,7 @@ export function createMainRouter(
         ai_query: 'POST /api/v1/ai/query',
         key_status: 'GET /api/v1/ai/key-status',
         simulator_stress_test: 'POST /api/v1/simulator/stress-test',
+        hazard_evaluation: 'POST /api/v1/simulator/hazard-evaluation',
         datasets: 'GET /api/v1/datasets',
         health: 'GET /health',
       },

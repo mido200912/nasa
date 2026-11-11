@@ -626,9 +626,49 @@
           <input type="text" id="simMaterial" value="PMMA Acrylic" placeholder="e.g. PMMA Acrylic, Nomex, Kapton">
         </div>
 
-        <button class="btn-submit" id="btnSim" onclick="runSimulation()" style="background: linear-gradient(135deg, #0284c7, var(--accent-cyan));">
-          <span>Execute Simulation</span>
-        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-submit" id="btnSim" onclick="runSimulation()" style="flex: 1; background: linear-gradient(135deg, #0284c7, var(--accent-cyan));">
+            <span>Execute Simulation</span>
+          </button>
+          <button class="btn-submit" id="btn3DHazard" onclick="run3DHazardEvaluation()" style="flex: 1; background: linear-gradient(135deg, #ff5722, #ec4899);">
+            <span>🪐 3D Engine Hazard</span>
+          </button>
+        </div>
+
+        <!-- 3D Hazard Result Box -->
+        <div class="result-box" id="hazard3DResultBox" style="border-color: rgba(255, 87, 34, 0.4); background: #0c1322;">
+          <div class="result-header">
+            <span style="color: var(--accent-cyan); font-weight: 700;">🪐 3D Canvas Trigger Parameters</span>
+            <span class="risk-badge" id="h3dSafetyBadge">NOMINAL</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
+            <div style="background: #141c2e; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <span style="font-size: 11px; color: var(--text-muted); display: block;">Hazard Score</span>
+              <strong id="h3dScore" style="font-size: 18px; color: #ff5722; font-family: 'JetBrains Mono', monospace;">0.0%</strong>
+            </div>
+            <div style="background: #141c2e; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <span style="font-size: 11px; color: var(--text-muted); display: block;">Spread Velocity</span>
+              <strong id="h3dVelocity" style="font-size: 18px; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace;">0.0 mm/s</strong>
+            </div>
+            <div style="background: #141c2e; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <span style="font-size: 11px; color: var(--text-muted); display: block;">Flame Geometry</span>
+              <strong id="h3dGeometry" style="font-size: 12px; color: #fbbf24; font-family: 'JetBrains Mono', monospace;">spherical</strong>
+            </div>
+            <div style="background: #141c2e; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <span style="font-size: 11px; color: var(--text-muted); display: block;">Particle Density</span>
+              <strong id="h3dParticles" style="font-size: 18px; color: #a78bfa; font-family: 'JetBrains Mono', monospace;">1200</strong>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; display: flex; align-items: center; gap: 8px; background: #162032; padding: 8px 12px; border-radius: 6px;">
+            <span>Render Color: <strong id="h3dColorCode" style="font-family: 'JetBrains Mono';">#FF3333</strong></span>
+            <span id="h3dColorPreview" style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #FF3333;"></span>
+            <span style="margin-left: auto;">Warning Flash: <strong id="h3dFlashUI" style="color: #f87171;">TRUE</strong></span>
+          </div>
+
+          <div style="font-size: 13px; line-height: 1.5; color: #e2e8f0; border-left: 3px solid #ff5722; padding-left: 10px;" id="h3dExplanation"></div>
+        </div>
 
         <!-- Result Box -->
         <div class="result-box" id="simResultBox">
@@ -807,6 +847,72 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<span>Execute Simulation</span>';
+      }
+    }
+
+    // Run 3D Hazard Evaluation
+    async function run3DHazardEvaluation() {
+      const habitatMap = { lunar: 'lunar_base', mars: 'mars_rover', iss: 'iss' };
+      const rawHab = document.getElementById('simHabitat').value;
+      const target_planet_or_habitat = habitatMap[rawHab] || 'lunar_base';
+      const oxygen_concentration = parseFloat(document.getElementById('simO2Range').value);
+      const pressure_psi = parseFloat(document.getElementById('simPressureRange').value);
+      const material_type = document.getElementById('simMaterial').value.trim();
+      const btn = document.getElementById('btn3DHazard');
+      const box = document.getElementById('hazard3DResultBox');
+
+      if (!material_type) {
+        alert('Please specify a material type');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Evaluating 3D...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/simulator/hazard-evaluation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            target_planet_or_habitat,
+            oxygen_concentration,
+            pressure_psi,
+            material_type
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.simulation_metadata && data.visual_3d_trigger_params) {
+          box.classList.add('visible');
+
+          const meta = data.simulation_metadata;
+          const vis = data.visual_3d_trigger_params;
+
+          document.getElementById('h3dScore').innerText = `${meta.hazard_score_percentage}%`;
+          document.getElementById('h3dVelocity').innerText = `${vis.flame_spread_velocity_mm_s} mm/s`;
+          document.getElementById('h3dGeometry').innerText = vis.flame_geometry_type;
+          document.getElementById('h3dParticles').innerText = vis.particle_explosion_density;
+
+          const badge = document.getElementById('h3dSafetyBadge');
+          badge.innerText = meta.safety_status;
+          badge.className = `risk-badge risk-${meta.safety_status === 'CRITICAL_HAZARD' ? 'high' : meta.safety_status === 'ELEVATED_RISK' ? 'medium' : 'low'}`;
+
+          document.getElementById('h3dColorCode').innerText = vis.risk_color_hex;
+          document.getElementById('h3dColorPreview').style.background = vis.risk_color_hex;
+          document.getElementById('h3dFlashUI').innerText = vis.warning_flash_ui ? 'FLASH TRUE' : 'FALSE';
+          document.getElementById('h3dFlashUI').style.color = vis.warning_flash_ui ? '#f87171' : '#34d399';
+
+          document.getElementById('h3dExplanation').innerText = data.scientific_explanation;
+
+          await fetchKeyPoolStatus();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to evaluate 3D hazard'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🪐 3D Engine Hazard</span>';
       }
     }
 

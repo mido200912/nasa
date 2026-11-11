@@ -137,5 +137,46 @@ describe('Vulcan-X Backend & AI Engine API Tests', () => {
     },
     { timeout: 35000 }
   );
+
+  test(
+    'POST /api/v1/simulator/hazard-evaluation calculates 3D visual parameters for lunar base PMMA',
+    async () => {
+      const reqBody = {
+        target_planet_or_habitat: 'lunar_base',
+        oxygen_concentration: 32.0,
+        pressure_psi: 9.5,
+        material_type: 'PMMA Acrylic',
+      };
+
+      const res = await app.fetch(
+        new Request('http://localhost:4000/api/v1/simulator/hazard-evaluation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reqBody),
+        })
+      );
+
+      expect(res.status).toBe(200);
+      const data = (await res.json()) as any;
+      expect(data.success).toBe(true);
+      expect(data.simulation_metadata).toBeDefined();
+      expect(data.simulation_metadata.target_planet_or_habitat).toBe('lunar_base');
+      expect(data.simulation_metadata.gravity_g).toBe(0.166);
+      expect(typeof data.simulation_metadata.hazard_score_percentage).toBe('number');
+      expect(['NOMINAL', 'ELEVATED_RISK', 'CRITICAL_HAZARD']).toContain(data.simulation_metadata.safety_status);
+
+      expect(data.visual_3d_trigger_params).toBeDefined();
+      expect(data.visual_3d_trigger_params.render_flame).toBe(true);
+      expect(data.visual_3d_trigger_params.flame_geometry_type).toBe('spherical_blue_core');
+      expect(typeof data.visual_3d_trigger_params.flame_spread_velocity_mm_s).toBe('number');
+      expect(typeof data.visual_3d_trigger_params.risk_color_hex).toBe('string');
+      expect(typeof data.visual_3d_trigger_params.particle_explosion_density).toBe('number');
+      expect(typeof data.visual_3d_trigger_params.warning_flash_ui).toBe('boolean');
+
+      expect(typeof data.scientific_explanation).toBe('string');
+      expect(data.scientific_explanation.length).toBeGreaterThan(15);
+    },
+    { timeout: 35000 }
+  );
 });
 
