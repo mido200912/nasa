@@ -1,0 +1,835 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vulcan-X | NASA AI Combustion & Safety Test Bench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0e17;
+      --card-bg: #111827;
+      --card-border: #1f293d;
+      --accent-cyan: #00e5ff;
+      --accent-flame: #ff5722;
+      --accent-warning: #fbbf24;
+      --accent-safe: #10b981;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-subtle: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #151d30, var(--bg-dark) 70%);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 28px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-badge {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-flame), #ff8a00);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 20px rgba(255, 87, 34, 0.4);
+    }
+
+    .title-group h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-group h1 span {
+      background: linear-gradient(90deg, #ff8a00, var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .title-group p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(17, 24, 39, 0.8);
+      border: 1px solid var(--card-border);
+      padding: 8px 16px;
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+
+    .status-indicator.online {
+      background: var(--accent-safe);
+      box-shadow: 0 0 10px var(--accent-safe);
+    }
+
+    .status-indicator.offline {
+      background: var(--accent-flame);
+      box-shadow: 0 0 10px var(--accent-flame);
+    }
+
+    .status-text {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .btn-refresh {
+      background: transparent;
+      border: none;
+      color: var(--accent-cyan);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-refresh:hover {
+      opacity: 0.8;
+    }
+
+    /* Key Pool Visualizer */
+    .pool-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+
+    .pool-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .pool-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .key-slot {
+      background: #162032;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      transition: all 0.2s;
+    }
+
+    .key-slot.active {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+    }
+
+    .key-slot-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .key-number {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .key-status-pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .pill-active { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .pill-standby { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+    .pill-ratelimited { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .pill-error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    .key-masked {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-subtle);
+    }
+
+    .key-metrics {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Grid Layout for Testing */
+    .test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .test-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 14px;
+    }
+
+    .card-icon {
+      font-size: 22px;
+    }
+
+    .card-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .card-header span {
+      font-size: 12px;
+      color: var(--accent-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      margin-left: auto;
+      background: rgba(0, 229, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Form inputs */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    select, input, textarea {
+      background: #162032;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 85px;
+    }
+
+    .presets-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preset-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      background: var(--accent-cyan);
+      color: #0a0e17;
+      border-color: var(--accent-cyan);
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .range-row input[type="range"] {
+      flex: 1;
+      padding: 0;
+      accent-color: var(--accent-flame);
+    }
+
+    .range-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      min-width: 55px;
+      text-align: right;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, var(--accent-flame), #ff7a00);
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(255, 87, 34, 0.3);
+    }
+
+    .btn-submit:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Result boxes */
+    .result-box {
+      background: #0d131f;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .result-box.visible {
+      display: flex;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .risk-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .risk-low { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .risk-medium { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+    .risk-high { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+
+    .answer-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+    }
+
+    .sources-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .source-tag {
+      background: #1e293b;
+      color: var(--accent-cyan);
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
+
+    /* Simulation metrics display */
+    .sim-stat-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #162032;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .sim-multiplier {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent-flame);
+    }
+
+    .sim-stat-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sim-stat-info span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .sim-recommendation {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #cbd5e1;
+      border-left: 3px solid var(--accent-cyan);
+      padding-left: 10px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-area">
+        <div class="logo-badge">🔥</div>
+        <div class="title-group">
+          <h1>VULCAN-X <span>NASA Combustion AI</span></h1>
+          <p>2026 Space Apps Challenge: "Flame in Freefall" • OpenRouter 5-Key Failover Engine</p>
+        </div>
+      </div>
+      <div class="status-bar">
+        <div class="status-indicator" id="statusDot"></div>
+        <span class="status-text" id="statusText">Checking Backend...</span>
+        <button class="btn-refresh" onclick="checkBackendHealth()">🔄 Refresh</button>
+      </div>
+    </header>
+
+    <!-- Key Rotation Pool Diagnostics -->
+    <div class="pool-card">
+      <div class="pool-header">
+        <div class="pool-title">
+          <span>🔑 5 OpenRouter API Key Failover Pool</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="activeKeyBanner" style="font-size: 12px; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace;">
+            Loading pool status...
+          </span>
+          <button onclick="resetKeyPool()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.3)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">🔄 Reset Keys</button>
+        </div>
+      </div>
+      <div class="pool-grid" id="keyPoolGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="test-grid">
+      <!-- Section 1: AI Knowledge & RAG Query -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🧠</div>
+          <h2>Knowledge & RAG Query</h2>
+          <span>POST /api/v1/ai/query</span>
+        </div>
+
+        <div class="form-group">
+          <label>Environment Context</label>
+          <select id="queryEnv">
+            <option value="lunar_base">🌙 Lunar Base (30-34% O2, 8.2-10.2 psi)</option>
+            <option value="iss">🛰️ International Space Station (ISS 0g)</option>
+            <option value="mars_rover">🪐 Mars Rover / Surface Habitat (0.38g)</option>
+            <option value="earth">🌍 Earth Dual-Use (Firefighter Telemetry)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Quick Presets</label>
+          <div class="presets-row">
+            <button class="preset-btn" onclick="setPreset('How does 34% oxygen at 8.2 psi accelerate PMMA solid fuel flame spread in a lunar habitat?', 'lunar_base')">Lunar 34% O2 Flame</button>
+            <button class="preset-btn" onclick="setPreset('Why does forced ventilation between 0.05 m/s and 0.2 m/s sustain flames in microgravity according to NASA BASS?', 'iss')">BASS Ventilation</button>
+            <button class="preset-btn" onclick="setPreset('What is the cool flame phenomenon discovered in NASA FLEX experiments and how to suppress it?', 'iss')">FLEX Cool Flame</button>
+            <button class="preset-btn" onclick="setPreset('How can microgravity optical particle sensors be adapted for municipal firefighter helmets on Earth?', 'earth')">Earth Spinoff</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Research Question</label>
+          <textarea id="queryText" placeholder="Enter your combustion or fire safety question..."></textarea>
+        </div>
+
+        <button class="btn-submit" id="btnQuery" onclick="runAiQuery()">
+          <span>Run RAG Analysis</span>
+        </button>
+
+        <!-- Result Box -->
+        <div class="result-box" id="queryResultBox">
+          <div class="result-header">
+            <span>NASA PSI Analysis</span>
+            <span class="risk-badge" id="riskBadge">Low</span>
+          </div>
+          <div class="answer-text" id="answerText"></div>
+          <div>
+            <label style="font-size: 11px; text-transform: uppercase;">Scientific Sources & Citations:</label>
+            <div class="sources-list" id="sourcesList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Simulator Stress Test -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">⚡</div>
+          <h2>Habitat Stress-Test Simulator</h2>
+          <span>POST /api/v1/simulator/stress-test</span>
+        </div>
+
+        <div class="form-group">
+          <label>Target Habitat</label>
+          <select id="simHabitat">
+            <option value="lunar">🌙 Lunar Base (0.166g - High spread risk)</option>
+            <option value="iss">🛰️ ISS Module (Microgravity 0g)</option>
+            <option value="mars">🪐 Mars Rover Cabin (0.38g)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Oxygen Concentration (%)</label>
+          <div class="range-row">
+            <input type="range" id="simO2Range" min="15" max="45" step="0.5" value="30" oninput="document.getElementById('simO2Val').innerText = this.value + '%'">
+            <span class="range-val" id="simO2Val">30.0%</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Cabin Pressure (psi)</label>
+          <div class="range-row">
+            <input type="range" id="simPressureRange" min="5" max="15" step="0.1" value="10.2" oninput="document.getElementById('simPressureVal').innerText = this.value + ' psi'">
+            <span class="range-val" id="simPressureVal">10.2 psi</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Material Type</label>
+          <div class="presets-row" style="margin-bottom: 6px;">
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'PMMA Acrylic'">PMMA Acrylic</button>
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'Cotton Cellulose'">Cotton</button>
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'Nomex Aramid'">Nomex</button>
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'Kapton Polyimide'">Kapton</button>
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'PTFE Teflon'">Teflon</button>
+          </div>
+          <input type="text" id="simMaterial" value="PMMA Acrylic" placeholder="e.g. PMMA Acrylic, Nomex, Kapton">
+        </div>
+
+        <button class="btn-submit" id="btnSim" onclick="runSimulation()" style="background: linear-gradient(135deg, #0284c7, var(--accent-cyan));">
+          <span>Execute Simulation</span>
+        </button>
+
+        <!-- Result Box -->
+        <div class="result-box" id="simResultBox">
+          <div class="result-header">
+            <span>Simulation Assessment</span>
+            <span class="risk-badge" id="simSafetyBadge">Safe</span>
+          </div>
+          <div class="sim-stat-box">
+            <div class="sim-multiplier" id="simMultiplier">1.0x</div>
+            <div class="sim-stat-info">
+              <strong style="font-size: 14px;">Ignition Multiplier</strong>
+              <span>Relative to Earth 1g sea-level air</span>
+            </div>
+          </div>
+          <div class="sim-recommendation" id="simRecommendation"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:4000';
+
+    // Preset helper
+    function setPreset(question, env) {
+      document.getElementById('queryText').value = question;
+      document.getElementById('queryEnv').value = env;
+    }
+
+    // Check backend health & fetch key pool
+    async function checkBackendHealth() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        if (res.ok) {
+          const data = await res.json();
+          dot.className = 'status-indicator online';
+          text.innerText = `Connected (${API_BASE})`;
+          await fetchKeyPoolStatus();
+        } else {
+          throw new Error('HTTP ' + res.status);
+        }
+      } catch (err) {
+        dot.className = 'status-indicator offline';
+        text.innerText = `Backend Offline (${err.message})`;
+      }
+    }
+
+    // Fetch 5-Key pool diagnostics
+    async function fetchKeyPoolStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/ai/key-status`);
+        const data = await res.json();
+        if (data.success && data.keys) {
+          document.getElementById('activeKeyBanner').innerText = `Active Key: Slot #${data.activeKeyIndex} (OpenRouter)`;
+          const grid = document.getElementById('keyPoolGrid');
+          grid.innerHTML = data.keys.map(k => `
+            <div class="key-slot ${k.index === data.activeKeyIndex ? 'active' : ''}">
+              <div class="key-slot-top">
+                <span class="key-number">Slot #${k.index}</span>
+                <span class="key-status-pill pill-${k.status.toLowerCase()}">${k.status}</span>
+              </div>
+              <div class="key-masked">${k.maskedKey}</div>
+              <div class="key-metrics">
+                <span>Success: <strong style="color:#34d399">${k.successCount}</strong></span>
+                <span>Fails: <strong style="color:#f87171">${k.failCount}</strong></span>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load key status:', err);
+      }
+    }
+
+    // Run AI Query
+    async function runAiQuery() {
+      const question = document.getElementById('queryText').value.trim();
+      const environment = document.getElementById('queryEnv').value;
+      const btn = document.getElementById('btnQuery');
+      const box = document.getElementById('queryResultBox');
+
+      if (!question) {
+        alert('Please enter a research question or click a preset!');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Querying OpenRouter...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/ai/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, environment })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          box.classList.add('visible');
+          document.getElementById('answerText').innerText = data.answer;
+          
+          // Risk level badge
+          const badge = document.getElementById('riskBadge');
+          badge.innerText = `${data.risk_level} Risk`;
+          badge.className = `risk-badge risk-${data.risk_level.toLowerCase()}`;
+
+          // Sources
+          const sourcesContainer = document.getElementById('sourcesList');
+          sourcesContainer.innerHTML = (data.sources || []).map(s => `<span class="source-tag">📄 ${s}</span>`).join('');
+
+          // Update key status to reflect usage
+          await fetchKeyPoolStatus();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to process request'));
+        }
+      } catch (err) {
+        alert('Network error connecting to backend: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Run RAG Analysis</span>';
+      }
+    }
+
+    // Run Simulation
+    async function runSimulation() {
+      const habitat = document.getElementById('simHabitat').value;
+      const oxygen_concentration = parseFloat(document.getElementById('simO2Range').value);
+      const pressure_psi = parseFloat(document.getElementById('simPressureRange').value);
+      const material_type = document.getElementById('simMaterial').value.trim();
+      const btn = document.getElementById('btnSim');
+      const box = document.getElementById('simResultBox');
+
+      if (!material_type) {
+        alert('Please specify a material type');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Simulating...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/simulator/stress-test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            habitat,
+            oxygen_concentration,
+            pressure_psi,
+            material_type
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.simulation_result) {
+          const sim = data.simulation_result;
+          box.classList.add('visible');
+          
+          document.getElementById('simMultiplier').innerText = `${sim.ignition_speed_multiplier}x`;
+          
+          const badge = document.getElementById('simSafetyBadge');
+          badge.innerText = sim.safety_status;
+          badge.className = `risk-badge risk-${sim.safety_status === 'Critical' ? 'high' : sim.safety_status === 'Warning' ? 'medium' : 'low'}`;
+
+          document.getElementById('simRecommendation').innerText = sim.recommendation;
+
+          // Update key status to reflect simulation AI usage
+          await fetchKeyPoolStatus();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to run simulation'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Execute Simulation</span>';
+      }
+    }
+
+    // Reset Key Pool
+    async function resetKeyPool() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/ai/key-reset`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          await fetchKeyPoolStatus();
+        } else {
+          alert('Failed to reset keys: ' + (data.error || 'Unknown'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    // Initialize on load
+    window.onload = () => {
+      checkBackendHealth();
+    };
+  </script>
+</body>
+</html>
+
