@@ -15,23 +15,34 @@
 - [Endpoints Overview](#endpoints-overview)
 - [1. Root Info](#1-root-info)
 - [2. Health Check](#2-health-check)
-- [3. Test Dashboard](#3-test-dashboard)
+- [3. Interactive Test Bench & 3D WebGL Canvas](#3-interactive-test-bench--3d-webgl-canvas)
 - [4. AI Knowledge & RAG Query](#4-ai-knowledge--rag-query)
 - [5. Key Pool Status](#5-key-pool-status)
 - [6. Key Pool Reset](#6-key-pool-reset)
 - [7. Habitat Stress-Test Simulator](#7-habitat-stress-test-simulator)
 - [8. Planetary & Habitat 3D Hazard Evaluation](#8-planetary--habitat-3d-hazard-evaluation)
+  - [Planetary Physics Reference (NASA PSI)](#planetary-physics-reference-nasa-psi)
+  - [Flame Geometry Types Reference](#flame-geometry-types-reference)
+  - [Material Flammability Indices (NASA-STD-6001B)](#material-flammability-indices-nasa-std-6001b)
+  - [Frontend 3D Canvas Integration Guide](#frontend-3d-canvas-integration-guide)
 - [9. NASA PSI Datasets Catalog](#9-nasa-psi-datasets-catalog)
 - [Error Responses](#error-responses)
 - [Environment Variables](#environment-variables)
+- [Quick Start](#quick-start)
 
 ---
 
 ## Authentication & Configuration
 
-This API does **not** require client-side authentication. The OpenRouter API keys are configured server-side via environment variables (`.env` file).
+This API does **not** require client-side authentication headers. The OpenRouter API keys are securely managed server-side via environment variables (`.env`).
 
-The system manages **5 OpenRouter API keys** with automatic failover. If a key hits a rate limit (429), quota error (402/403), or any error, the system automatically rotates to the next available key.
+### 5-Key Failover Pool Architecture
+The system orchestrates a pool of **5 OpenRouter API keys** with transparent rotation and failover:
+1. **Load Distribution:** Requests utilize the active slot (Slot #1 by default).
+2. **Automatic Failover:** On HTTP `429` (Rate Limited) or `402/403` (Quota/Credit Limit), the slot enters a 60-second cooldown (`KEY_COOLDOWN_MS`), and the request automatically shifts to the next standby slot without failing client requests.
+3. **Transient Error Handling:** On unexpected provider errors, the slot enters a 15-second quick retry cooldown.
+4. **State Recovery:** When an API key succeeds, its `failCount` resets to 0 and other unblocked keys return to `STANDBY`.
+5. **Resilient Zero-Hallucination Fallback:** If all 5 external API slots are exhausted or rate-limited simultaneously, the system activates the offline **NASA-PSI Deterministic Scientific Engine**, guaranteeing high availability.
 
 ---
 
@@ -39,15 +50,15 @@ The system manages **5 OpenRouter API keys** with automatic failover. If a key h
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| `GET` | `/` | Project info & endpoint listing |
-| `GET` | `/health` | Backend health check |
-| `GET` | `/test` | Interactive HTML test dashboard |
-| `POST` | `/api/v1/ai/query` | AI-powered RAG knowledge query |
-| `GET` | `/api/v1/ai/key-status` | API key pool diagnostics |
-| `POST` | `/api/v1/ai/key-reset` | Reset all key pool statuses |
-| `POST` | `/api/v1/simulator/stress-test` | Habitat fire safety simulation |
-| `POST` | `/api/v1/simulator/hazard-evaluation` | 3D canvas planetary hazard parameters |
-| `GET` | `/api/v1/datasets` | NASA PSI datasets catalog |
+| `GET` | `/` | Project info, status & complete endpoint directory |
+| `GET` | `/health` | Backend health check, uptime, and timestamp |
+| `GET` | `/test` | Interactive HTML test dashboard with real-time 3D Three.js canvas |
+| `POST` | `/api/v1/ai/query` | AI-powered RAG combustion query with scientific citations |
+| `GET` | `/api/v1/ai/key-status` | 5-key failover pool health and diagnostic telemetry |
+| `POST` | `/api/v1/ai/key-reset` | Reset all 5 key slot counters, cooldowns, and statuses |
+| `POST` | `/api/v1/simulator/stress-test` | Habitat combustion stress-test with AI recommendations |
+| `POST` | `/api/v1/simulator/hazard-evaluation` | Planetary 3D canvas trigger parameters & visual physics |
+| `GET` | `/api/v1/datasets` | NASA PSI research catalog (8 investigations) |
 
 ---
 
@@ -55,7 +66,7 @@ The system manages **5 OpenRouter API keys** with automatic failover. If a key h
 
 **`GET /`**
 
-Returns project metadata and available endpoints.
+Returns project identity, edition, challenge name, and an indexed map of all available endpoints.
 
 ### Response `200 OK`
 
@@ -69,6 +80,7 @@ Returns project metadata and available endpoints.
     "ai_query": "POST /api/v1/ai/query",
     "key_status": "GET /api/v1/ai/key-status",
     "simulator_stress_test": "POST /api/v1/simulator/stress-test",
+    "hazard_evaluation": "POST /api/v1/simulator/hazard-evaluation",
     "datasets": "GET /api/v1/datasets",
     "health": "GET /health"
   }
@@ -87,21 +99,21 @@ curl http://localhost:4000/
 
 **`GET /health`**
 
-Returns backend health status, uptime, and timestamp.
+Monitors backend service health, process uptime, and system timestamp.
 
 ### Response `200 OK`
 
 ```json
 {
   "status": "healthy",
-  "uptime": 123.456,
-  "timestamp": "2026-11-11T18:00:00.000Z"
+  "uptime": 248.152,
+  "timestamp": "2026-11-11T20:45:00.000Z"
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | `string` | Always `"healthy"` when server is running |
+| `status` | `string` | `"healthy"` when operational |
 | `uptime` | `number` | Process uptime in seconds |
 | `timestamp` | `string` | ISO 8601 timestamp |
 
@@ -113,19 +125,15 @@ curl http://localhost:4000/health
 
 ---
 
-## 3. Test Dashboard
+## 3. Interactive Test Bench & 3D WebGL Canvas
 
-**`GET /test`**
+**`GET /test`** *(Alias: `GET /demo`)*
 
-Serves the interactive HTML test bench (`test.html`) for visually testing all API endpoints. Also accessible via `GET /demo` (redirects to `/test`).
-
-### Response `200 OK`
-
-Returns `text/html` content with the Vulcan-X interactive dashboard including:
-- AI Knowledge & RAG Query form
-- Habitat Stress-Test Simulator form
-- 5-Key Pool live visualizer with Reset button
-- Quick preset buttons for common queries
+Serves the standalone, browser-ready interactive dashboard (`test.html`). It includes:
+- **5-Key Pool Live Visualizer:** Real-time key slot indicators, success/fail counters, and a manual **🔄 Reset Keys** action.
+- **RAG Query Bench:** Research question input, habitat environment presets, and citation viewer.
+- **Habitat Stress-Test Bench:** Oxygen slider (15-45%), pressure slider (5-15 psi), material selectors, and AI-enriched protocol recommendations.
+- **3D Microgravity & Habitat Combustion Visualizer:** Integrated **Three.js WebGL canvas** featuring a cylindrical test chamber (NASA-STD-6001), sample plate, dynamic flame mesh (morphing between spherical blue cores, ventilation trails, and plumes), thousands of particle sparks, real-time lighting flickers, and orbit controls.
 
 ---
 
@@ -133,31 +141,32 @@ Returns `text/html` content with the Vulcan-X interactive dashboard including:
 
 **`POST /api/v1/ai/query`**
 
-Queries the NASA PSI knowledge base using a RAG (Retrieval-Augmented Generation) pipeline. Searches relevant combustion research documents, then sends context-grounded prompt to OpenRouter AI for scientific analysis.
+Executes a Retrieval-Augmented Generation (RAG) pipeline over NASA PSI research investigations (BASS, Saffire, ACME, FLEX, CFI, NASA-STD-6001B). Matches semantic keywords, scores environmental relevance, and prompts OpenRouter for an authoritative zero-hallucination analysis.
 
 ### Request Body
 
 ```json
 {
-  "question": "How does elevated oxygen affect flame spread in lunar habitats?",
+  "question": "How does 34% oxygen at 8.2 psi accelerate PMMA solid fuel flame spread in a lunar habitat?",
   "environment": "lunar_base"
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `question` | `string` | ✅ | Research question (min 1 character) |
-| `environment` | `string` | ✅ | One of: `"lunar_base"`, `"mars_rover"`, `"iss"`, `"earth"` |
+| Field | Type | Required | Allowed Values / Description |
+|-------|------|----------|------------------------------|
+| `question` | `string` | ✅ | Research inquiry (min 1 character) |
+| `environment` | `string` | ✅ | `"lunar_base"`, `"mars_rover"`, `"iss"`, `"earth"` |
 
 ### Success Response `200 OK`
 
 ```json
 {
   "success": true,
-  "answer": "Based on NASA PSI BASS and Saffire investigations, elevated oxygen concentrations (30-34% O2) in lunar habitats significantly accelerate flame spread rates...",
+  "answer": "Based on NASA Physical Science Informatics (PSI) combustion research (including BASS, Saffire, and ACME investigations):\n\n1. Combustion Dynamics: In microgravity and exploration atmospheres, the absence of natural buoyant convection modifies flame propagation. Low-speed ventilation sustains flame spread rather than extinguishing it.\n2. Material Safety: Under elevated oxygen conditions (e.g. 30%-34% O2 in lunar atmospheres), PMMA acrylic exhibits accelerated flame spread multipliers exceeding 2.5x.\n3. Suppression Protocols: Automatic ventilation isolation, followed by inert gas suppression (CO2 / N2) with sufficient dwell time (>15 min) is required.",
   "sources": [
     "BASS (Burning and Suppression of Solids) (Ferkul, P. V.)",
-    "Saffire (Spacecraft Fire Safety Experiment) (Urban, D.)"
+    "Saffire (Spacecraft Fire Safety Experiment) (Urban, D.)",
+    "NASA-STD-6001 Flammability Testing Standard"
   ],
   "risk_level": "High"
 }
@@ -166,16 +175,16 @@ Queries the NASA PSI knowledge base using a RAG (Retrieval-Augmented Generation)
 | Field | Type | Description |
 |-------|------|-------------|
 | `success` | `boolean` | `true` on success |
-| `answer` | `string` | AI-generated scientific answer grounded in NASA PSI data |
-| `sources` | `string[]` | Array of NASA PSI investigation citations used |
-| `risk_level` | `string` | Risk assessment: `"Low"`, `"Medium"`, or `"High"` |
+| `answer` | `string` | AI-generated scientific analysis grounded in NASA PSI data |
+| `sources` | `string[]` | Specific investigation titles and principal investigator citations |
+| `risk_level` | `string` | Risk categorization: `"Low"`, `"Medium"`, or `"High"` |
 
 ### cURL
 
 ```bash
 curl -X POST http://localhost:4000/api/v1/ai/query \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is the cool flame phenomenon in FLEX experiments?", "environment": "iss"}'
+  -d '{"question": "What is the cool flame phenomenon in NASA FLEX experiments?", "environment": "iss"}'
 ```
 
 ---
@@ -184,7 +193,7 @@ curl -X POST http://localhost:4000/api/v1/ai/query \
 
 **`GET /api/v1/ai/key-status`**
 
-Returns live diagnostics for the 5-key OpenRouter rotation pool, including each key's status, success/fail counts, and cooldown timers.
+Exposes live diagnostics for the 5-key OpenRouter rotation pool. Useful for frontend health monitors and admin dashboards.
 
 ### Response `200 OK`
 
@@ -200,14 +209,37 @@ Returns live diagnostics for the 5-key OpenRouter rotation pool, including each 
       "maskedKey": "sk-or-v...4d31",
       "status": "ACTIVE",
       "failCount": 0,
-      "successCount": 5,
-      "lastUsedAt": "2026-11-11T18:20:30.000Z",
-      "cooldownUntil": null
+      "successCount": 12,
+      "lastUsedAt": "2026-11-11T20:42:15.000Z"
     },
     {
       "index": 2,
       "provider": "openrouter",
-      "maskedKey": "sk-or-v...1ce1",
+      "maskedKey": "sk-or-v...1ee1",
+      "status": "STANDBY",
+      "failCount": 0,
+      "successCount": 0
+    },
+    {
+      "index": 3,
+      "provider": "openrouter",
+      "maskedKey": "sk-or-v...d080",
+      "status": "STANDBY",
+      "failCount": 0,
+      "successCount": 0
+    },
+    {
+      "index": 4,
+      "provider": "openrouter",
+      "maskedKey": "sk-or-v...d06d",
+      "status": "STANDBY",
+      "failCount": 0,
+      "successCount": 0
+    },
+    {
+      "index": 5,
+      "provider": "openrouter",
+      "maskedKey": "sk-or-v...60b4",
       "status": "STANDBY",
       "failCount": 0,
       "successCount": 0
@@ -216,42 +248,16 @@ Returns live diagnostics for the 5-key OpenRouter rotation pool, including each 
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `totalKeys` | `number` | Total key slots (5) |
-| `activeKeyIndex` | `number` | Currently active slot index (1-5) |
-| `keys` | `KeySlotInfo[]` | Array of key slot info objects |
-
-**KeySlotInfo:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `index` | `number` | Slot number (1-5) |
-| `provider` | `string` | Always `"openrouter"` |
-| `maskedKey` | `string` | Masked API key or `"NOT_CONFIGURED"` |
-| `status` | `string` | `"ACTIVE"`, `"STANDBY"`, `"RATE_LIMITED"`, or `"ERROR"` |
-| `failCount` | `number` | Consecutive failure count (resets to 0 on success) |
-| `successCount` | `number` | Total successful requests |
-| `lastUsedAt` | `string?` | ISO 8601 timestamp of last use |
-| `cooldownUntil` | `string?` | ISO 8601 timestamp when cooldown ends |
-
-### cURL
-
-```bash
-curl http://localhost:4000/api/v1/ai/key-status
-```
-
 ---
 
 ## 6. Key Pool Reset
 
 **`POST /api/v1/ai/key-reset`**
 
-Resets all key pool statuses: clears fail counts, cooldowns, errors, and restores keys to their initial state (first valid key = ACTIVE, rest = STANDBY).
+Flushes all accumulated errors, fail counters, and active cooldown timers across all 5 key slots, restoring Slot #1 to `ACTIVE` and subsequent slots to `STANDBY`.
 
 ### Request Body
-
-No body required.
+None required.
 
 ### Response `200 OK`
 
@@ -261,16 +267,7 @@ No body required.
   "message": "Key pool has been fully reset",
   "totalKeys": 5,
   "activeKeyIndex": 1,
-  "keys": [
-    {
-      "index": 1,
-      "provider": "openrouter",
-      "maskedKey": "sk-or-v...4d31",
-      "status": "ACTIVE",
-      "failCount": 0,
-      "successCount": 0
-    }
-  ]
+  "keys": [ /* 5 cleared slot objects */ ]
 }
 ```
 
@@ -286,7 +283,7 @@ curl -X POST http://localhost:4000/api/v1/ai/key-reset
 
 **`POST /api/v1/simulator/stress-test`**
 
-Simulates fire hazard conditions for a space habitat using physics-based calculations and AI-enriched recommendations. The simulation considers gravity effects, oxygen concentration, cabin pressure, and material flammability.
+Calculates ignition and flame propagation multipliers using empirical NASA exploration atmosphere formulas, enriched by AI-generated aerospace protocol countermeasures.
 
 ### Request Body
 
@@ -301,12 +298,10 @@ Simulates fire hazard conditions for a space habitat using physics-based calcula
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `habitat` | `string` | ✅ | One of: `"lunar"`, `"mars"`, `"iss"` |
-| `oxygen_concentration` | `number` | ✅ | O2 percentage (0-100) |
-| `pressure_psi` | `number` | ✅ | Cabin pressure in psi (must be positive) |
-| `material_type` | `string` | ✅ | Material name (min 1 character) |
-
-**Recognized Materials:** PMMA/Acrylic, Cotton, Delrin, Polyethylene, Silicone, Polycarbonate, Nomex, Kapton, Teflon/PTFE, Titanium/Metal. Unknown materials default to coefficient 1.0.
+| `habitat` | `string` | ✅ | `"lunar"`, `"mars"`, or `"iss"` |
+| `oxygen_concentration` | `number` | ✅ | Cabin oxygen % (0.0 to 100.0) |
+| `pressure_psi` | `number` | ✅ | Cabin pressure in psi (> 0) |
+| `material_type` | `string` | ✅ | Material name (e.g. `"PMMA Acrylic"`, `"Nomex"`, `"Kapton"`) |
 
 ### Success Response `200 OK`
 
@@ -316,41 +311,9 @@ Simulates fire hazard conditions for a space habitat using physics-based calcula
   "simulation_result": {
     "ignition_speed_multiplier": 4.25,
     "safety_status": "Critical",
-    "recommendation": "CRITICAL COMBUSTION HAZARD in Lunar Base: Flame spread multiplier is elevated to 4.25x under 30% O2 at 10.2 psi. Material 'PMMA Acrylic' exceeds NASA-STD-6001 Test 1 safety threshold..."
+    "recommendation": "CRITICAL COMBUSTION HAZARD in Lunar Base: Flame spread multiplier is elevated to 4.25x under 30% O2 at 10.2 psi. Material 'PMMA Acrylic' exceeds NASA-STD-6001 Test 1 safety threshold for this atmosphere. Immediate Protocol: (1) Replace with Kapton, Nomex, or PTFE fluoropolymers. (2) Interlock cabin ventilation to automatically shut down within 5 seconds of smoke trigger to deprive oxidizer transport (NASA BASS protocol). (3) Arm rapid nitrogen dilution or fine water mist suppression system."
   }
 }
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | `boolean` | `true` on success |
-| `simulation_result.ignition_speed_multiplier` | `number` | Flame spread multiplier relative to Earth 1g sea-level (2 decimal places) |
-| `simulation_result.safety_status` | `string` | `"Safe"`, `"Warning"`, or `"Critical"` |
-| `simulation_result.recommendation` | `string` | AI-enriched safety recommendation with NASA protocols |
-
-### Physics Model
-
-| Factor | Formula |
-|--------|---------|
-| **Gravity** | Lunar: ×1.25, ISS: ×1.15, Mars: ×1.08 |
-| **Oxygen** | `(O2% / 20.95)^1.65` (O2 clamped to 12-60%) |
-| **Pressure** | `(14.7 / pressure_psi)^0.22` (clamped to 4-20 psi) |
-| **Final** | `gravity × oxygen × pressure × material_coefficient` |
-
-### Safety Classification
-
-| Status | Condition |
-|--------|-----------|
-| **Critical** | Multiplier ≥ 2.2 OR O2 ≥ 34% OR (material ≥ 1.4 AND O2 ≥ 28%) |
-| **Warning** | Multiplier ≥ 1.05 OR O2 > 23.5% OR (material ≥ 1.2 AND multiplier ≥ 0.95) |
-| **Safe** | All other conditions |
-
-### cURL
-
-```bash
-curl -X POST http://localhost:4000/api/v1/simulator/stress-test \
-  -H "Content-Type: application/json" \
-  -d '{"habitat": "lunar", "oxygen_concentration": 30.0, "pressure_psi": 10.2, "material_type": "PMMA Acrylic"}'
 ```
 
 ---
@@ -360,7 +323,7 @@ curl -X POST http://localhost:4000/api/v1/simulator/stress-test \
 **`POST /api/v1/simulator/hazard-evaluation`**  
 *(Alias: `POST /api/v1/simulator/physics-engine`)*
 
-Evaluates the exact fire hazard based on planetary environment physics (Lunar Base 0.166g, Mars 0.38g, ISS 0g, Earth 1g), oxygen mole fraction, pressure, and material combustibility. Outputs exact 3D canvas trigger parameters (geometry type, spread velocity, particle explosion density, hex color, flashing alert) and an authoritative NASA PSI scientific explanation.
+Core planetary physics evaluation service designed specifically to drive real-time **3D simulation canvases (Three.js, WebGL, Babylon.js)**. Computes flame velocity, particle density, 3D geometry mesh type, risk color hex, flashing alert HUD states, and concise scientific explanations.
 
 ### Request Body
 
@@ -377,8 +340,8 @@ Evaluates the exact fire hazard based on planetary environment physics (Lunar Ba
 |-------|------|----------|-------------|
 | `target_planet_or_habitat` | `string` | ✅ | `"lunar_base"` (or `"lunar"`), `"mars_rover"` (or `"mars"`), `"iss"`, `"earth"` |
 | `oxygen_concentration` | `number` | ✅ | Cabin oxygen percentage (0.0 - 100.0%) |
-| `pressure_psi` | `number` | ✅ | Cabin pressure in psi (positive number, e.g. 8.2 - 14.7 psi) |
-| `material_type` | `string` | ✅ | Material name (e.g. `"PMMA Acrylic"`, `"Nomex Aramid"`, `"Kapton"`, `"Cotton"`) |
+| `pressure_psi` | `number` | ✅ | Cabin pressure in psi (positive, e.g. 8.2 - 14.7 psi) |
+| `material_type` | `string` | ✅ | Material identifier (e.g. `"PMMA Acrylic"`, `"Nomex Aramid"`, `"Kapton"`, `"Cotton"`) |
 
 ### Success Response `200 OK`
 
@@ -388,50 +351,101 @@ Evaluates the exact fire hazard based on planetary environment physics (Lunar Ba
   "simulation_metadata": {
     "target_planet_or_habitat": "lunar_base",
     "gravity_g": 0.166,
-    "hazard_score_percentage": 88.5,
+    "hazard_score_percentage": 99.9,
     "safety_status": "CRITICAL_HAZARD"
   },
   "visual_3d_trigger_params": {
     "render_flame": true,
     "flame_geometry_type": "spherical_blue_core",
-    "flame_spread_velocity_mm_s": 5.2,
+    "flame_spread_velocity_mm_s": 19.7,
     "risk_color_hex": "#FF3333",
-    "particle_explosion_density": 1500,
+    "particle_explosion_density": 1623,
     "warning_flash_ui": true
   },
-  "scientific_explanation": "In a lunar habitat environment with 32% oxygen and 0.166g gravity, PMMA acrylic exhibits rapid spherical flame propagation without buoyant plume detachment, drastically increasing localized thermal buildup."
+  "scientific_explanation": "In a lunar habitat environment with 32% oxygen and 0.166g gravity, PMMA Acrylic exhibits rapid spherical flame propagation without buoyant plume detachment, drastically increasing localized thermal buildup."
 }
 ```
 
-### Response Fields Breakdown
+---
 
-#### `simulation_metadata`
-| Field | Type | Description |
-|-------|------|-------------|
-| `target_planet_or_habitat` | `string` | Normalized environment ID (`"lunar_base"`, `"mars_rover"`, `"iss"`, `"earth"`) |
-| `gravity_g` | `number` | Gravity constant: Lunar = 0.166, Mars = 0.38, ISS = 0.0, Earth = 1.0 |
-| `hazard_score_percentage` | `number` | Composite hazard index from 0.0% to 100.0% |
-| `safety_status` | `string` | `"NOMINAL"`, `"ELEVATED_RISK"`, or `"CRITICAL_HAZARD"` |
+### Planetary Physics Reference (NASA PSI)
 
-#### `visual_3d_trigger_params` (Drives 3D Canvas)
-| Field | Type | Description |
-|-------|------|-------------|
-| `render_flame` | `boolean` | `true` if ignition/combustion can initiate and sustain |
-| `flame_geometry_type` | `string` | 3D flame mesh/shader geometry: `"spherical_blue_core"`, `"hemispherical_spread"`, `"buoyant_plume"`, `"smoldering_surface"`, `"ventilation_driven_trail"`, `"micro_droplet_cool_flame"`, `"none"` |
-| `flame_spread_velocity_mm_s` | `number` | Physical flame front propagation speed across the solid surface in mm/s |
-| `risk_color_hex` | `string` | Hex color code for 3D lights and particles: `#10B981` (Safe), `#F59E0B` (Warning), `#FF3333` (Critical) |
-| `particle_explosion_density` | `number` | Density of 3D smoke/spark emitter particles (90 to 2000+) |
-| `warning_flash_ui` | `boolean` | Flag to trigger red flashing HUD warning indicators in the 3D cockpit |
+| Habitat / Planet | Key | Gravity ($g$) | Atmosphere Baseline | Dominant Combustion Phenomenon |
+|------------------|-----|---------------|---------------------|--------------------------------|
+| **Lunar Base** | `lunar_base` | `0.166g` | 30-34% $\text{O}_2$, 8.2-10.2 psi | Absence of buoyant plume detachment; expanding spherical blue-core flames; ~40% faster surface spread. |
+| **Mars Habitat / Rover** | `mars_rover` | `0.38g` | Moderate pressure, high $\text{CO}_2$ | Partial buoyancy; hemispherical reaction zones; intense localized flash hazards at $\text{O}_2$ leak points. |
+| **ISS Microgravity** | `iss` | `0.0g` | 21% $\text{O}_2$, 14.7 psi | Zero natural buoyancy; combustion relies on forced ventilation airflow (0.05-0.2 m/s), creating elongated cylindrical boundary flames. |
+| **Earth Ground Facility** | `earth` | `1.0g` | 20.95% $\text{O}_2$, 14.7 psi | Upward buoyant plume convection; standard terrestrial teardrop flame geometry. |
 
-#### `scientific_explanation`
-Peer-reviewed aerospace combustion synthesis connecting NASA PSI investigations (BASS, Saffire, ACME, FLEX) with the exact gravity, oxygen, pressure, and material parameters.
+---
 
-### cURL
+### Flame Geometry Types Reference
 
-```bash
-curl -X POST http://localhost:4000/api/v1/simulator/hazard-evaluation \
-  -H "Content-Type: application/json" \
-  -d '{"target_planet_or_habitat": "lunar_base", "oxygen_concentration": 32.0, "pressure_psi": 9.5, "material_type": "PMMA Acrylic"}'
+The `flame_geometry_type` field dictates which 3D mesh, shader, or particle distribution to render in the simulator:
+
+| Geometry Type String | Physical Description | Visual 3D Representation |
+|----------------------|----------------------|--------------------------|
+| `"spherical_blue_core"` | Microgravity & Lunar ($0g$ to $0.166g$) spherical flame with intense soot-free chemiluminescent blue inner core and outer amber halo. | 3D concentric glowing spheres; inner cyan/blue mesh + outer pulsing translucent sphere. |
+| `"hemispherical_spread"` | Low-gravity dome flame expanding uniformly on a flat solid fuel bed ($0.38g$). | Flattened dome geometry expanding radially across the X-Z plane. |
+| `"ventilation_driven_trail"` | Forced airflow-driven flame aboard ISS ($0g$). Flame extends along the ventilation vector. | Elongated horizontal teardrop/cylinder stretched along the flow axis. |
+| `"buoyant_plume"` | Terrestrial 1g gravity-driven combustion with upward thermal buoyancy. | Vertical rising flickering teardrop mesh with buoyant tip displacement. |
+| `"smoldering_surface"` | Flameless surface combustion with glowing embers (e.g. Cotton Cellulose at low oxygen). | Flat glowing embers disc on the material plate without open flame volume. |
+| `"micro_droplet_cool_flame"` | NASA FLEX low-temperature combustion phenomenon. | Dim blue micro-spherical halo with minimal radiative heat signature. |
+| `"none"` | Non-flammable condition (materials like PTFE/Titanium under nominal atmosphere). | No flame mesh rendered; only faint thermal haze or dust particles. |
+
+---
+
+### Material Flammability Indices (NASA-STD-6001B)
+
+Empirical combustibility factors used to compute `flame_spread_velocity_mm_s` and `hazard_score_percentage`:
+
+| Material Category | Examples / Aliases | Flammability Factor | Risk Profile |
+|-------------------|-------------------|---------------------|--------------|
+| **PMMA / Acrylic** | `PMMA Acrylic`, `Plexiglass`, `Lucite` | `1.85` | Extremely hazardous; vigorous burning in $\text{O}_2 > 25\%$. |
+| **Delrin / POM** | `Polyoxymethylene`, `Acetal` | `1.75` | Severe flame spread; molten dripping hazard. |
+| **Cellulose / Cotton** | `Cotton Fabric`, `Paper`, `Cellulose` | `1.50` | Readily ignitable; severe deep-seated smoldering risk. |
+| **Polyethylene / Polyolefins** | `PE`, `Polypropylene` | `1.45` | Rapid melt spread; high smoke yield. |
+| **Silicone Elastomers** | `Silicone Rubber`, `Sealant` | `1.30` | Burns vigorously in enriched oxygen atmospheres. |
+| **Polycarbonate** | `Lexan`, `PC Sheet` | `0.90` | Self-extinguishing at 21% $\text{O}_2$; flammable $> 26\%$. |
+| **Nomex / Aramid** | `Nomex Aramid`, `Kevlar` | `0.38` | Aerospace flame-retardant suit standard; char-forming. |
+| **Kapton / Polyimide** | `Kapton Film`, `Thermal MLI` | `0.30` | High thermal stability; spacecraft thermal blanket standard. |
+| **PTFE / Teflon** | `Teflon`, `Fluoropolymer` | `0.18` | Exceptional oxygen index ($\text{LOI} > 95\%$); space safe. |
+| **Aerospace Metals** | `Titanium`, `Aluminum`, `Stainless Steel`| `0.05` | Structural non-combustible baseline. |
+
+---
+
+### Frontend 3D Canvas Integration Guide
+
+Frontend developers can consume `POST /api/v1/simulator/hazard-evaluation` in Three.js or Babylon.js:
+
+```typescript
+// Sample Three.js integration snippet
+async function onSimulationTrigger(requestPayload) {
+  const response = await fetch('http://localhost:4000/api/v1/simulator/hazard-evaluation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestPayload)
+  });
+
+  const { simulation_metadata, visual_3d_trigger_params } = await response.json();
+
+  // 1. Toggle flame mesh visibility & color
+  flameMesh.visible = visual_3d_trigger_params.render_flame;
+  flameMaterial.color.set(visual_3d_trigger_params.risk_color_hex);
+  pointLight.color.set(visual_3d_trigger_params.risk_color_hex);
+
+  // 2. Scale flame by spread velocity
+  const velocityScale = visual_3d_trigger_params.flame_spread_velocity_mm_s * 0.1;
+  flameMesh.scale.set(velocityScale, velocityScale, velocityScale);
+
+  // 3. Update particle emitter density
+  particleEmitter.count = visual_3d_trigger_params.particle_explosion_density;
+
+  // 4. Trigger HUD flashing alert
+  if (visual_3d_trigger_params.warning_flash_ui) {
+    cockpitHUD.triggerRedFlashAlert();
+  }
+}
 ```
 
 ---
@@ -440,7 +454,7 @@ curl -X POST http://localhost:4000/api/v1/simulator/hazard-evaluation \
 
 **`GET /api/v1/datasets`**
 
-Returns the full catalog of NASA Physical Science Informatics (PSI) combustion research documents used by the RAG knowledge base.
+Provides the complete index of Physical Science Informatics (PSI) research datasets powering the Vulcan-X combustion engine:
 
 ### Response `200 OK`
 
@@ -455,7 +469,7 @@ Returns the full catalog of NASA Physical Science Informatics (PSI) combustion r
       "title": "Solid Fuel Extinction and Flame Spread in Forced Microgravity Flows",
       "environment": ["iss", "lunar_base", "mars_rover"],
       "gravity_condition": "Microgravity (0g)",
-      "citation": "Ferkul, P. V., & T'ien, J. S. ..."
+      "citation": "Ferkul, P. V., & T'ien, J. S. (NASA PSI BASS)"
     },
     {
       "id": "PSI-SAFFIRE-01",
@@ -463,38 +477,67 @@ Returns the full catalog of NASA Physical Science Informatics (PSI) combustion r
       "title": "Large-Scale Spacecraft Fire Growth and Suppression in Microgravity",
       "environment": ["iss"],
       "gravity_condition": "Microgravity (0g)",
-      "citation": "Urban, D., ..."
+      "citation": "Urban, D., et al. (NASA/TM-20210018442)"
+    },
+    {
+      "id": "PSI-ACME-01",
+      "investigation": "ACME (Advanced Combustion via Microgravity Experiments)",
+      "title": "Laminar Gaseous Flame Spread in G-Jitter and Microgravity Environments",
+      "environment": ["iss", "mars_rover"],
+      "gravity_condition": "Microgravity (0g) & Mars (0.38g)",
+      "citation": "Sunderland, P. B., et al. (NASA PSI ACME)"
+    },
+    {
+      "id": "PSI-FLEX-01",
+      "investigation": "FLEX & FLEX-2 (Flame Extinguishment Experiment)",
+      "title": "Droplet Combustion and Low-Temperature Cool Flame Extinction",
+      "environment": ["iss"],
+      "gravity_condition": "Microgravity (0g)",
+      "citation": "Williams, F. A., & Dryer, F. L. (NASA PSI FLEX)"
+    },
+    {
+      "id": "PSI-CFI-01",
+      "investigation": "CFI (Cool Flames Investigation)",
+      "title": "Low-Temperature Combustion Phenomena in Droplet and Gaseous Mixtures",
+      "environment": ["iss"],
+      "gravity_condition": "Microgravity (0g)",
+      "citation": "Dryer, F. L., et al. (NASA PSI CFI)"
+    },
+    {
+      "id": "PSI-STD-6001",
+      "investigation": "NASA-STD-6001B Flammability Assessment Standard",
+      "title": "Flammability, Odor, Offgassing, and Compatibility Requirements for Materials in Spacecraft",
+      "environment": ["iss", "lunar_base", "mars_rover", "earth"],
+      "gravity_condition": "All Gravitational Regimes",
+      "citation": "NASA Technical Standard NASA-STD-6001B"
+    },
+    {
+      "id": "PSI-EARTH-01",
+      "investigation": "Earth Dual-Use: Space-Grade Smoke & Fire Suppression Telemetry",
+      "title": "Terrestrial Spinoff of Microgravity Flame Diagnostics for Firefighters",
+      "environment": ["earth"],
+      "gravity_condition": "Earth Normal Gravity (1g)",
+      "citation": "NASA Spinoff Technology Transfer Program"
+    },
+    {
+      "id": "PSI-MARS-01",
+      "investigation": "Mars Surface Habitat Fire Safety Architecture",
+      "title": "Low-Pressure Carbon Dioxide and Enriched Oxygen Combustion in 0.38g",
+      "environment": ["mars_rover"],
+      "gravity_condition": "Mars Gravity (0.38g)",
+      "citation": "NASA Exploration Systems Development Directorate"
     }
   ]
 }
-```
-
-**Available Investigations (8 documents):**
-
-| ID | Investigation | Environment |
-|----|--------------|-------------|
-| `PSI-BASS-01` | BASS (Burning and Suppression of Solids) | ISS, Lunar, Mars |
-| `PSI-SAFFIRE-01` | Saffire (Spacecraft Fire Safety) | ISS |
-| `PSI-ACME-01` | ACME (Advanced Combustion via Microgravity) | ISS, Mars |
-| `PSI-FLEX-01` | FLEX (Flame Extinguishment) | ISS |
-| `PSI-CFI-01` | CFI (Cool Flames Investigation) | ISS |
-| `PSI-STD-6001` | NASA-STD-6001 (Material Safety Standard) | All |
-| `PSI-EARTH-01` | Earth Dual-Use Applications | Earth |
-| `PSI-MARS-01` | Mars Habitat Fire Safety | Mars |
-
-### cURL
-
-```bash
-curl http://localhost:4000/api/v1/datasets
 ```
 
 ---
 
 ## Error Responses
 
-All endpoints return consistent error responses:
+The backend enforces uniform error schemas with clear status codes:
 
-### Validation Error `400`
+### Validation Error `400 Bad Request`
 
 ```json
 {
@@ -507,7 +550,7 @@ All endpoints return consistent error responses:
 }
 ```
 
-### Invalid/Missing JSON Body `400`
+### Missing or Malformed JSON `400 Bad Request`
 
 ```json
 {
@@ -521,7 +564,7 @@ All endpoints return consistent error responses:
 ```json
 {
   "success": false,
-  "error": "An internal error occurred while processing the AI query",
+  "error": "An internal error occurred during planetary hazard evaluation",
   "message": "Detailed error message"
 }
 ```
@@ -530,58 +573,49 @@ All endpoints return consistent error responses:
 
 ## Environment Variables
 
-Create a `.env` file in the project root:
+Configure your `.env` file in `vulcan-x/Ai Model/.env`:
 
 ```env
 # Server
 PORT=4000
 NODE_ENV=development
 
-# OpenRouter Model
+# OpenRouter Free Reasoning Model
 OPENROUTER_MODEL=nvidia/nemotron-3.5-lightning:free
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 
-# 5 OpenRouter API Keys (Rotation Pool)
+# 5 OpenRouter API Keys (Failover Rotation Pool)
 OPENROUTER_API_KEY_1=sk-or-v1-your-key-1
 OPENROUTER_API_KEY_2=sk-or-v1-your-key-2
 OPENROUTER_API_KEY_3=sk-or-v1-your-key-3
 OPENROUTER_API_KEY_4=sk-or-v1-your-key-4
 OPENROUTER_API_KEY_5=sk-or-v1-your-key-5
 
-# Key Cooldown (ms) - Time to wait before retrying a rate-limited key
+# Key Cooldown (ms) - Time to hold a rate-limited key before retry
 KEY_COOLDOWN_MS=60000
 ```
-
-### Key Rotation Behavior
-
-1. All 5 keys share the same OpenRouter model
-2. On **429 (rate limit)** or **402/403 (quota)**: Key enters cooldown for `KEY_COOLDOWN_MS` (default: 60s), system rotates to next key
-3. On **other errors**: Key enters 15-second quick cooldown, rotates to next key
-4. On **success**: Active key's `failCount` resets to 0, other keys restore to `STANDBY`
-5. If **all 5 keys fail**: System falls back to deterministic NASA-PSI Scientific Engine (zero-hallucination hardcoded response)
 
 ---
 
 ## Quick Start
 
 ```bash
-# Install dependencies
+# 1. Navigate to AI Model directory
+cd "vulcan-x/Ai Model"
+
+# 2. Install dependencies via Bun
 bun install
 
-# Create .env file with your OpenRouter keys
-cp .env.example .env
-
-# Start development server
+# 3. Start development server with auto-reload
 bun run dev
 
-# Open test dashboard
-# http://localhost:4000/test
+# 4. Open the interactive 3D test bench in your browser
+# URL: http://localhost:4000/test
 
-# Run tests
+# 5. Run test suite
 bun test
 ```
 
 ---
 
 > Built for the **2026 NASA Space Apps Challenge** — *Flame in Freefall: AI-Powered Fire Safety Insights*
-
