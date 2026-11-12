@@ -9,10 +9,13 @@ test("scene labels synchronize the active planet card", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Earth", exact: true })).toBeVisible();
 });
 
-test("hero omits the mission-control eyebrow and fire slogan", async ({ page }) => {
+test("hero omits removed command labels", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("MISSION CONTROL", { exact: false })).toHaveCount(0);
   await expect(page.getByText("UNDERSTAND THE FIRE. PROTECT THE MISSION.", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".hero-topline")).toHaveCount(0);
+  await expect(page.locator(".status-dot")).toHaveCount(0);
+  expect(await page.locator(".command-hero").evaluate((element) => getComputedStyle(element, "::before").backgroundImage)).toBe("none");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
@@ -24,7 +27,7 @@ test("interactive previews work without claiming real AI inference", async ({ pa
   await slider.fill("35");
   expect(Number(await page.getByTestId("risk-score").textContent())).toBeGreaterThan(Number(baseline));
   await page.getByRole("switch", { name: "Terrestrial engineering mode" }).click();
-  await expect(page.getByText("TERRESTRIAL ENGINEERING SPEC")).toBeVisible();
+  await expect(page.getByText("Terrestrial engineering spec", { exact: true })).toBeVisible();
   await page.getByLabel("Incident scenario").selectOption("arc");
   await page.getByRole("button", { name: "Generate preview" }).click();
   await expect(page.getByText("Preview complete · engineering review required")).toBeVisible({ timeout: 15_000 });

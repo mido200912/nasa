@@ -24,3 +24,6 @@ Avoid generic SaaS marketing tiles, decorative browser chrome, cartoon planets, 
 
 ## Accessibility & Inclusion
 Keyboard-operable controls, visible focus, text labels independent of color, reduced-motion support, and responsive touch interaction. Target WCAG AA contrast and 44px touch controls.
+
+## Reading comfort
+Body copy is 16px (1rem) with 1.65 line height; controls/labels use 14px and supporting captions 12–13px minimum. Prefer sentence-case Barlow for reading and UI labels; keep Barlow Condensed for large display headings and monospace for short identifiers/numeric data. Use soft off-white primary text and brighter secondary grays on charcoal/navy cards, not pure-white glare or tiny dim text. Layouts must grow/reflow for the larger type, including expanded dossier notes; retain the approved planet geometry and NASA-blue palette.

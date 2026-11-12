@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowRight, ArrowUpRight, ChevronDown, Crosshair, Flame } from "lucide-react";
+import { ArrowDown, ArrowUpRight, ChevronDown, Crosshair, Flame } from "lucide-react";
 import { environments, researchLinks } from "@/lib/environments";
 import { solarPlanets } from "@/lib/solar-system";
 import { getPlanetMetrics, PLANET_FACT_NOTES, planetProfiles } from "@/lib/planet-profiles";
@@ -66,13 +66,11 @@ export function CommandHero() {
 
   return <section ref={hero} className="command-hero" id="mission-control" data-view="solar" aria-label="Interactive planetary explorer">
     <header className="navbar">
-      <a href="#mission-control" className="wordmark"><Flame size={25} strokeWidth={1.7} /><span>VULCAN<span className="brand-x">-X</span></span><span className="brand-divider" /><span className="brand-sub">NASA PSI<br />RESEARCH EXPLORER</span></a>
-      <div className="nav-right"><span className="engine-status"><span className="status-dot" />RAG ENGINE <span className="muted">/ PREVIEW</span></span><a className="button button-small" href="#stress-test">Launch simulator <ArrowUpRight size={15} /></a></div>
+      <a href="#mission-control" className="wordmark"><Flame size={25} strokeWidth={1.7} /><span>VULCAN<span className="brand-x">-X</span></span><span className="brand-divider" /><span className="brand-sub">NASA PSI<br />Research explorer</span></a>
+      <div className="nav-right"><span className="engine-status">RAG engine <span className="muted">/ Preview</span></span><a className="button button-small" href="#stress-test">Launch simulator <ArrowUpRight size={15} /></a></div>
     </header>
 
-    <div className="hero-topline mono"><span className="hero-topline-right">SYSTEM V.01 <span className="muted">—</span> RESEARCH DEMONSTRATOR</span></div>
-
-    <div className="hero-intro"><h1><span className="hero-title-line">Different worlds.</span><br /><span className="hero-title-line">Different <span>fire rules.</span></span></h1><p>Stress-test the next frontier.<br /> Explore combustion beyond Earth.</p><a href="#paradox" className="text-link">Explore the science <ArrowRight size={15} /></a></div>
+    <div className="hero-intro"><h1><span className="hero-title-line">Different worlds.</span><br /><span className="hero-title-line">Different <span>fire rules.</span></span></h1><p>Stress-test the next frontier.<br /> Explore combustion beyond Earth.</p><a href="#paradox" className="text-link science-button"><span>Explore the science</span><span className="science-button-icon" aria-hidden="true"><ArrowDown size={17} strokeWidth={1.75} /></span></a></div>
 
     <OrbitalSystem onSelect={selectEnvironment} visible={visible} paused={false} reducedMotion={reducedMotion} selectedPlanet={selectedPlanet} onInspect={inspectPlanet} />
 
@@ -93,7 +91,7 @@ export function CommandHero() {
       </footer>
     </motion.aside></AnimatePresence></div>
 
-    <div className="hero-bottom mono"><span><span className="status-dot" />PROCEDURAL RENDERING <span className="muted">/ NO TEXTURES REQUIRED</span></span><a href="#paradox">SCROLL TO DISCOVER <ArrowDown size={12} /></a><span className="hero-bottom-coordinate">{environment.coordinates}</span></div>
+    <div className="hero-bottom"><span>Procedural rendering <span className="muted">/ No textures required</span></span><a href="#paradox">Scroll to discover <ArrowDown size={12} /></a><span className="hero-bottom-coordinate">{environment.coordinates}</span></div>
     <span className="sr-only" role="status">{cardMode === "planet" ? `Selected planet: ${inspectedPlanet.name}` : `Selected environment: ${environment.name}`}</span>
   </section>;
 }

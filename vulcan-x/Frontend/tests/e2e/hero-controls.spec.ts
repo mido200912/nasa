@@ -13,7 +13,8 @@ for (const width of [375, 1440]) {
       const scene = document.querySelector(".orbital-canvas")!.getBoundingClientRect();
       const card = document.querySelector(".telemetry-position")!.getBoundingClientRect();
       const hero = document.querySelector(".command-hero")!.getBoundingClientRect();
-      return { gap: innerWidth < 1024 ? card.top - scene.bottom : hero.bottom - scene.bottom };
+      // The larger dossier now determines hero height; measure below its content too.
+      return { gap: innerWidth < 1024 ? card.top - scene.bottom : hero.bottom - Math.max(scene.bottom, card.bottom) };
     });
     expect(layout.gap).toBeGreaterThanOrEqual(0);
     expect(layout.gap).toBeLessThan(140);

@@ -57,6 +57,11 @@ try {
       }
     }
     if (width === 1440 || width === 375) {
+      for (const [name, selector] of [["previews", ".engine-grid"], ["architecture", "#architecture"]]) {
+        await page.locator(selector).scrollIntoViewIfNeeded();
+        await page.evaluate(() => { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); });
+        await page.locator(selector).screenshot({ path: fileURLToPath(new URL(`${name}-${width}.png`, directory)) });
+      }
       const comparison = page.locator(".flame-comparison");
       for (const [mode, name] of [["microgravity", "Microgravity"], ["earth", "Earth gravity"]]) {
         await comparison.getByRole("button", { name, exact: false }).click();
