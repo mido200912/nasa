@@ -62,6 +62,11 @@ try {
         await page.evaluate(() => { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); });
         await page.locator(selector).screenshot({ path: fileURLToPath(new URL(`${name}-${width}.png`, directory)) });
       }
+      await page.getByRole("combobox", { name: "Incident scenario", exact: true }).click();
+      await expect(page.getByRole("listbox")).toBeVisible();
+      await page.screenshot({ path: fileURLToPath(new URL(`scenario-picker-${width}.png`, directory)) });
+      await page.getByRole("listbox").screenshot({ path: fileURLToPath(new URL(`scenario-menu-${width}.png`, directory)) });
+      await page.keyboard.press("Escape");
       const comparison = page.locator(".flame-comparison");
       for (const [mode, name] of [["microgravity", "Microgravity"], ["earth", "Earth gravity"]]) {
         await comparison.getByRole("button", { name, exact: false }).click();

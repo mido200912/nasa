@@ -51,6 +51,7 @@
   --z-scene: 0;
   --z-content: 5;
   --z-navigation: 8;
+  --z-dropdown: 12;
   --z-skip: 20;
 }
 
@@ -285,7 +286,6 @@ input[type="range"]::-moz-range-thumb { width: 10px; height: 13px; background: v
 .bridge-secondary { display: flex; align-items: center; gap: 9px; padding-top: 18px; border-top: 1px solid var(--color-line); margin-top: 12px; font-size: 10px; color: var(--color-muted); }
 .bridge-secondary svg { color: var(--color-link); }
 .incident-label { display: block; margin-top: 25px; font-size: 7px; color: var(--color-muted); margin-bottom: 8px; }
-.playbook-card select { display: block; width: 100%; min-height: 42px; color: var(--color-body); border: 1px solid var(--color-line-strong); background: var(--color-panel); border-radius: 2px; padding: 10px 27px 10px 9px; font-size: 10px; text-overflow: ellipsis; }
 .playbook-output { margin-top: 16px; min-height: 234px; border-block: 1px solid var(--color-line); padding-block: 12px; }
 .output-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--color-muted); font-size: 6px; }
 .output-heading > span:first-child { display: flex; align-items: center; gap: 6px; }
@@ -579,7 +579,6 @@ body { line-height: var(--leading-body); }
 .bridge-output-foot svg { margin-top: 4px; }
 .bridge-secondary { align-items: flex-start; font-size: var(--text-label); line-height: 1.6; }
 .bridge-secondary svg { margin-top: 4px; }
-.playbook-card select { font-size: var(--text-body); min-height: 48px; }
 .output-heading { flex-wrap: wrap; gap: 8px 16px; }
 .playbook-output { min-height: 16rem; }
 .playbook-output pre { font-family: var(--font-body); font-size: var(--text-body); line-height: 1.7; }
@@ -704,3 +703,22 @@ body { line-height: var(--leading-body); }
 @media (min-width: 1024px) {
   .command-hero[data-view="solar"] .hero-intro .science-button { margin-top: 8px; }
 }
+
+/* Incident select: portaled, collision-aware menu with managed keyboard/focus behavior. */
+/* Root overflow-x: clip already retains the scrollbar; avoid double compensation. */
+body[data-scroll-locked]:has(.scenario-menu) { margin-right: 0 !important; }
+.scenario-trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid var(--color-line-strong); border-radius: 4px; background: var(--color-panel); color: var(--color-text); font-family: var(--font-body); font-size: var(--text-body); line-height: 1.5; text-align: left; white-space: normal; transition: border-color 150ms var(--ease-out), background-color 150ms var(--ease-out); }
+.scenario-trigger:hover:not(:disabled) { border-color: var(--color-secondary-border); background: var(--color-panel-raised); }
+.scenario-trigger[data-state="open"] { border-color: var(--color-control); }
+.scenario-trigger:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+.scenario-trigger:active:not(:disabled) { background: var(--color-secondary-button); opacity: 1; }
+.scenario-trigger:disabled { opacity: 0.55; cursor: not-allowed; }
+.scenario-chevron { color: var(--color-body); transition: transform 150ms var(--ease-out); }
+.scenario-trigger[data-state="open"] .scenario-chevron { transform: rotate(180deg); }
+.scenario-menu { z-index: var(--z-dropdown); width: var(--radix-select-trigger-width); max-width: calc(100vw - 24px); max-height: var(--radix-select-content-available-height); overflow: hidden; border: 1px solid var(--color-line-strong); border-radius: 4px; background: var(--color-panel); box-shadow: 0 8px 20px var(--color-shadow); color: var(--color-text); font-family: var(--font-body); }
+.scenario-options { padding: 4px; }
+.scenario-option { display: flex; align-items: center; min-height: 44px; padding: 10px 12px; border-radius: 2px; font-size: var(--text-body); line-height: 1.5; overflow-wrap: anywhere; outline: none; cursor: pointer; user-select: none; }
+.scenario-option[data-state="checked"] { color: var(--color-link); }
+.scenario-option[data-highlighted] { background: var(--color-secondary-button); outline: 1px solid var(--color-focus); outline-offset: -1px; }
+.scenario-option:active { background: var(--color-panel); }
+.scenario-scroll { display: flex; align-items: center; justify-content: center; height: 28px; color: var(--color-body); cursor: default; }

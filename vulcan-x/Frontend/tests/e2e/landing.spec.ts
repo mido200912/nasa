@@ -28,11 +28,13 @@ test("interactive previews work without claiming real AI inference", async ({ pa
   expect(Number(await page.getByTestId("risk-score").textContent())).toBeGreaterThan(Number(baseline));
   await page.getByRole("switch", { name: "Terrestrial engineering mode" }).click();
   await expect(page.getByText("Terrestrial engineering spec", { exact: true })).toBeVisible();
-  await page.getByLabel("Incident scenario").selectOption("arc");
+  await page.getByRole("combobox", { name: "Incident scenario", exact: true }).click();
+  await page.getByRole("option", { name: /Electrical arc/ }).click();
   await page.getByRole("button", { name: "Generate preview" }).click();
   await expect(page.getByText("Preview complete · engineering review required")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("Use the approved electrical-isolation procedure.")).toBeVisible();
-  await page.getByLabel("Incident scenario").selectOption("dust");
+  await page.getByRole("combobox", { name: "Incident scenario", exact: true }).click();
+  await page.getByRole("option", { name: /Dust contamination/ }).click();
   await expect(page.getByText("Select a scenario to build a response outline.")).toBeVisible();
 });
 

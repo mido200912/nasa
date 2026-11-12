@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
-import { ArrowDown, ArrowRight, ArrowUpRight, Check, CircleDot, FileText, Globe2, RotateCcw, Satellite, ShieldCheck, Square } from "lucide-react";
+import * as Select from "@radix-ui/react-select";
+import { ArrowDown, ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronUp, CircleDot, FileText, Globe2, RotateCcw, Satellite, ShieldCheck, Square } from "lucide-react";
 import { calculateDemoRisk } from "@/lib/risk";
 import { Reveal } from "@/components/ui/Reveal";
 
@@ -34,10 +35,33 @@ function DualUseBridge() {
 }
 
 const scenarios = {
-  arc: { title: "Electrical arc / sealed Mars habitat", steps: ["Flag the suspected arc and alert the crew.", "Use the approved electrical-isolation procedure.", "Assess smoke and atmospheric telemetry remotely.", "Follow the habitat’s certified response checklist.", "Require engineering review before re-entry or restart."] },
-  smoke: { title: "Smoke detection / orbital research lab", steps: ["Record the sensor location and alert the crew.", "Correlate smoke reports with atmospheric telemetry.", "Identify the approved compartment response checklist.", "Escalate to the responsible mission safety operator.", "Log the incident for engineering review."] },
-  dust: { title: "Dust contamination / Mars airlock", steps: ["Flag the airlock contamination event.", "Notify the habitat environmental-control operator.", "Review airlock isolation and dust-monitoring telemetry.", "Use the approved contamination-control procedure.", "Require a qualified review before resuming operations."] },
+  arc: { title: "Electrical arc", steps: ["Flag the suspected arc and alert the crew.", "Use the approved electrical-isolation procedure.", "Assess smoke and atmospheric telemetry remotely.", "Follow the habitat’s certified response checklist.", "Require engineering review before re-entry or restart."] },
+  smoke: { title: "Smoke detection", steps: ["Record the sensor location and alert the crew.", "Correlate smoke reports with atmospheric telemetry.", "Identify the approved compartment response checklist.", "Escalate to the responsible mission safety operator.", "Log the incident for engineering review."] },
+  dust: { title: "Dust contamination", steps: ["Flag the airlock contamination event.", "Notify the habitat environmental-control operator.", "Review airlock isolation and dust-monitoring telemetry.", "Use the approved contamination-control procedure.", "Require a qualified review before resuming operations."] },
 } as const;
+
+type Scenario = keyof typeof scenarios;
+
+function ScenarioSelect({ value, onChange, disabled }: { value: Scenario; onChange: (value: Scenario) => void; disabled: boolean }) {
+  return <>
+    <label className="incident-label" id="incident-label" htmlFor="incident">Incident scenario</label>
+    <Select.Root value={value} onValueChange={(next) => { if (next in scenarios) onChange(next as Scenario); }} disabled={disabled} name="incident">
+      <Select.Trigger id="incident" className="scenario-trigger" aria-labelledby="incident-label">
+        <Select.Value />
+        <Select.Icon asChild><ChevronDown className="scenario-chevron" size={16} aria-hidden="true" /></Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content className="scenario-menu" position="popper" align="start" sideOffset={4} collisionPadding={12}>
+          <Select.ScrollUpButton className="scenario-scroll"><ChevronUp size={16} aria-hidden="true" /></Select.ScrollUpButton>
+          <Select.Viewport className="scenario-options">
+            {Object.entries(scenarios).map(([key, item]) => <Select.Item className="scenario-option" value={key} key={key} textValue={item.title}><Select.ItemText>{item.title}</Select.ItemText></Select.Item>)}
+          </Select.Viewport>
+          <Select.ScrollDownButton className="scenario-scroll"><ChevronDown size={16} aria-hidden="true" /></Select.ScrollDownButton>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  </>;
+}
 
 function PlaybookPreview() {
   const [scenario, setScenario] = useState<keyof typeof scenarios>("arc");
@@ -59,7 +83,7 @@ function PlaybookPreview() {
   }
   function stop() { if (timer.current) clearInterval(timer.current); timer.current = null; setRun((current) => ({ ...current, status: "idle" })); }
   return <article className="engine-card playbook-card"><div className="engine-card-top"><span>03 / Respond</span><FileText size={16} /></div><h3>A scenario in.<br />A playbook out.</h3><p>Preview a research-informed response structure. Built for review, never blind execution.</p>
-    <label className="incident-label" htmlFor="incident">Incident scenario</label><select id="incident" value={scenario} onChange={(event) => { const next = event.target.value as keyof typeof scenarios; setScenario(next); setRun({ scenario: next, text: "", status: "idle" }); }} disabled={run.status === "streaming"}>{Object.entries(scenarios).map(([value, item]) => <option key={value} value={value}>{item.title}</option>)}</select>
+    <ScenarioSelect value={scenario} onChange={(next) => { setScenario(next); setRun({ scenario: next, text: "", status: "idle" }); }} disabled={run.status === "streaming"} />
     <div className="playbook-output"><div className="output-heading"><span>Protocol preview</span><span>FLEX / ACME</span></div>{run.text ? <pre>{run.text}{run.status === "streaming" && <span className="typing-caret">▌</span>}</pre> : <div className="playbook-empty"><FileText size={25} strokeWidth={1} /><span>{run.status === "streaming" ? "Preparing preview…" : "Select a scenario to build a response outline."}</span><span className="mono">Scripted demo · no live AI</span></div>}</div>
     <div className="playbook-action">{run.status === "streaming" ? <button className="button button-outline" onClick={stop}><Square size={12} />Stop preview</button> : <button className="button" onClick={generate}>{run.text ? "Regenerate preview" : "Generate preview"}<ArrowRight size={14} /></button>}<span>{run.status === "complete" ? <Check size={14} /> : <ShieldCheck size={14} />}Review required</span></div>
     <p className="fine-print" role="status">{run.status === "complete" ? "Preview complete · engineering review required" : "Educational outline only. In an emergency, follow approved mission procedures."}</p>
