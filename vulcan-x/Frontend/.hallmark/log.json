@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-11-12",
+    "macrostructure": "Workbench (preserved)",
+    "theme": "NASA-inspired dark",
+    "nav": "N9 (preserved)",
+    "footer": "Ft1 (preserved)",
+    "enrichment": "Existing procedural planet and SVG flame illustrations preserved",
+    "brief": "User-requested palette-only rebrand: replace orange/cyan UI with NASA blue/red/white; retain dark design and current layout"
+  },
+  {
+    "date": "2026-11-11",
+    "macrostructure": "Workbench",
+    "theme": "Midnight (user-specified aerospace palette)",
+    "nav": "N9",
+    "footer": "Ft1",
+    "enrichment": "Interactive procedural orbital WebGL scene",
+    "brief": "VULCAN-X habitat fire-science demonstrator"
+  }
+]

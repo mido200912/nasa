@@ -1,0 +1,9 @@
+{
+  "date": "2026-11-11",
+  "initialState": "Frontend contains only .gitkeep",
+  "framework": "Next.js App Router / React 19",
+  "palette": "Current: NASA-inspired #050508 / #FAFAFA / #0032A0, with accessible light-blue UI tints for identity and highlighted data too. Supersedes initial orange/cyan and intermediate red accents; physical flame/planet colors remain independent.",
+  "fonts": "Barlow + Barlow Condensed; system monospace telemetry",
+  "motion": "Framer Motion; transform and opacity only",
+  "scope": "vulcan-x/Frontend only"
+}

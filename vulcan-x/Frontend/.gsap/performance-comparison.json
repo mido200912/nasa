@@ -1,0 +1,15 @@
+{
+  "conditions": "Same local headless Chromium, DPR 2, 4x CPU throttle, native hero scroll from 0 to 350px over 3 seconds. Renderer observations, not GPU hardware utilization or a guaranteed frame rate.",
+  "mobile375": {
+    "before": { "draws": 3780, "scriptMs": 776.443, "taskMs": 1217.386, "bufferPixels": 390000 },
+    "R1": { "draws": 105, "scriptMs": 232.114, "taskMs": 577.648, "bufferPixels": 97500 },
+    "R2": { "draws": 105, "scriptMs": 316.943, "taskMs": 925.296, "bufferPixels": 97500 },
+    "R3": { "draws": 84, "scriptMs": 232.287, "taskMs": 676.082, "bufferPixels": 97500 }
+  },
+  "desktop1440": {
+    "before": { "draws": 3801, "scriptMs": 1157.04, "taskMs": 2413.287, "bufferPixels": 2148048 },
+    "R1": { "draws": 105, "scriptMs": 328.605, "taskMs": 805.189, "bufferPixels": 1208088 },
+    "R2": { "draws": 105, "scriptMs": 361.227, "taskMs": 954.931, "bufferPixels": 1208088 },
+    "R3": { "draws": 105, "scriptMs": 311.543, "taskMs": 1056.542, "bufferPixels": 1208844 }
+  }
+}
