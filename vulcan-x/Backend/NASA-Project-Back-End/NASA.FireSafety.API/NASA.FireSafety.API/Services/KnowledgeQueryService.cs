@@ -27,11 +27,12 @@ public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcan
             Status = AnalysisStatus.Running, IsMock = false, CorrelationId = Guid.NewGuid()
         };
         dbContext.KnowledgeQueries.Add(query);
-        await dbContext.SaveChangesAsync(cancellationToken);
         var stopwatch = Stopwatch.StartNew();
         try
         {
+            await dbContext.SaveChangesAsync(cancellationToken);
             var ai = await aiClient.QueryAsync(new AiQueryRequest { Question = query.Question, Environment = aiEnvironment }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!ai.Success || string.IsNullOrWhiteSpace(ai.Answer)) throw new VulcanXServiceException(VulcanXFailureKind.InvalidResponse, "The AI service returned an unsuccessful knowledge response.");
 
             query.Answer = ai.Answer;
@@ -55,14 +56,34 @@ public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcan
         }
         catch (VulcanXServiceException exception)
         {
-            query.Status = AnalysisStatus.Failed;
-            query.ErrorCode = FailureCode(exception.Kind);
-            query.ErrorMessage = "The knowledge query could not be completed by the AI service.";
-            query.CompletedAt = DateTime.UtcNow;
-            query.DurationMs = (int)stopwatch.ElapsedMilliseconds;
-            await dbContext.SaveChangesAsync(CancellationToken.None);
+            await RecordFailureAsync(query.Id, FailureCode(exception.Kind), (int)stopwatch.ElapsedMilliseconds);
             throw new PersistedExternalFailureException(query.Id, exception.Kind);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await RecordFailureAsync(query.Id, "REQUEST_CANCELLED", (int)stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+        catch (Exception)
+        {
+            await RecordFailureAsync(query.Id, "WORKFLOW_FAILED", (int)stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+    }
+
+    private async Task RecordFailureAsync(Guid id, string code, int duration)
+    {
+        // Discard partial answer/citations; cancellation cleanup must not save success data.
+        dbContext.ChangeTracker.Clear();
+        using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var saved = await dbContext.KnowledgeQueries.SingleOrDefaultAsync(x => x.Id == id, cleanup.Token);
+        if (saved is null || saved.Status is AnalysisStatus.Completed or AnalysisStatus.Failed) return;
+        saved.Status = AnalysisStatus.Failed;
+        saved.ErrorCode = code;
+        saved.ErrorMessage = "The knowledge query could not be completed.";
+        saved.CompletedAt = DateTime.UtcNow;
+        saved.DurationMs = duration;
+        await dbContext.SaveChangesAsync(cleanup.Token);
     }
 
     public async Task<KnowledgeQueryResponseDto?> GetAsync(Guid id, CancellationToken cancellationToken)

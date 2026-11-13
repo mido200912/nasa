@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using NASA.FireSafety.API.DTOs.Habitat;
 using NASA.FireSafety.API.Interfaces;
 using NASA.FireSafety.API.Services;
@@ -7,11 +8,13 @@ using VulcanX.Infrastructure.ExternalServices.VulcanXAI;
 namespace NASA.FireSafety.API.Controllers;
 
 [ApiController, Route("api/habitat-analyses")]
-public sealed class HabitatAnalysesController(IHabitatAnalysisService service) : ControllerBase
+public sealed class HabitatAnalysesController(IHabitatAnalysisService service, IOptions<HabitatSubmissionOptions> submission) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<HabitatAnalysisResponseDto>> Create([FromBody] CreateHabitatAnalysisRequest request, CancellationToken cancellationToken)
     {
+        if (!submission.Value.Enabled)
+            return Problem(StatusCodes.Status422UnprocessableEntity, "Live Habitat submission is disabled", "A science-team-approved scientific fixture is required before live submission can be enabled.", "HABITAT_FIXTURE_NOT_APPROVED");
         try { return StatusCode(StatusCodes.Status201Created, await service.CreateAsync(request, cancellationToken)); }
         catch (CatalogRecordNotFoundException exception) { return Problem(StatusCodes.Status404NotFound, "Catalog record was not found", exception.Resource, "CATALOG_NOT_FOUND"); }
         catch (ScientificInputRequiredException exception) { return Problem(StatusCodes.Status422UnprocessableEntity, "Required scientific input is missing", exception.Message, "AI_REQUIRED_INPUT_MISSING"); }

@@ -9,7 +9,8 @@ export class RagService {
   // Retained for dependency-injection compatibility. Generation is never a fallback.
   constructor(_aiProvider: AiProviderService) {}
 
-  public async query(req: AiQueryRequest): Promise<AiQueryResponse> {
+  public async query(req: AiQueryRequest, signal?: AbortSignal): Promise<AiQueryResponse> {
+    signal?.throwIfAborted();
     const selectedDocs = this.searchKnowledgeBase(req.question, req.environment).slice(0, 4).map(({ doc }) => doc);
 
     if (selectedDocs.length === 0) {

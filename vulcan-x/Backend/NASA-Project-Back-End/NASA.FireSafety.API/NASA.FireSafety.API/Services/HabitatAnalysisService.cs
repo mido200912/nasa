@@ -39,16 +39,17 @@ public sealed class HabitatAnalysisService(FireSafetyDbContext dbContext, IVulca
             Status = AnalysisStatus.Running, CorrelationId = Guid.NewGuid(), IsMock = false
         };
         dbContext.HabitatAnalyses.Add(analysis);
-        await dbContext.SaveChangesAsync(cancellationToken);
 
         var stopwatch = Stopwatch.StartNew();
         try
         {
+            await dbContext.SaveChangesAsync(cancellationToken);
             var aiResponse = await aiClient.RunStressTestAsync(new StressTestRequest
             {
                 Habitat = habitat, OxygenConcentration = (double)input.Oxygen.Value,
                 PressurePsi = (double)(input.Pressure.Value / KpaPerPsi), MaterialType = material.Name
             }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!aiResponse.Success || string.IsNullOrWhiteSpace(aiResponse.SimulationResult.SafetyStatus))
                 throw new VulcanXServiceException(VulcanXFailureKind.InvalidResponse, "The AI service returned an unsuccessful habitat response.");
 
@@ -69,14 +70,33 @@ public sealed class HabitatAnalysisService(FireSafetyDbContext dbContext, IVulca
         }
         catch (VulcanXServiceException exception)
         {
-            analysis.Status = AnalysisStatus.Failed;
-            analysis.ErrorCode = FailureCode(exception.Kind);
-            analysis.ErrorMessage = "The habitat analysis could not be completed by the AI service.";
-            analysis.CompletedAt = DateTime.UtcNow;
-            analysis.DurationMs = (int)stopwatch.ElapsedMilliseconds;
-            await dbContext.SaveChangesAsync(CancellationToken.None);
+            await RecordFailureAsync(analysis.Id, FailureCode(exception.Kind), (int)stopwatch.ElapsedMilliseconds);
             throw new PersistedExternalFailureException(analysis.Id, exception.Kind);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await RecordFailureAsync(analysis.Id, "REQUEST_CANCELLED", (int)stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+        catch (Exception)
+        {
+            await RecordFailureAsync(analysis.Id, "WORKFLOW_FAILED", (int)stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+    }
+
+    private async Task RecordFailureAsync(Guid id, string code, int duration)
+    {
+        dbContext.ChangeTracker.Clear();
+        using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var saved = await dbContext.HabitatAnalyses.SingleOrDefaultAsync(x => x.Id == id, cleanup.Token);
+        if (saved is null || saved.Status is AnalysisStatus.Completed or AnalysisStatus.Failed) return;
+        saved.Status = AnalysisStatus.Failed;
+        saved.ErrorCode = code;
+        saved.ErrorMessage = "The habitat analysis could not be completed.";
+        saved.CompletedAt = DateTime.UtcNow;
+        saved.DurationMs = duration;
+        await dbContext.SaveChangesAsync(cleanup.Token);
     }
 
     public async Task<HabitatAnalysisResponseDto?> GetAsync(Guid id, CancellationToken cancellationToken)

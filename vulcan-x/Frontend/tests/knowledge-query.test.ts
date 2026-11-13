@@ -57,6 +57,30 @@ describe("Knowledge same-origin API client", () => {
     await expect(getKnowledgeQuery(queryId)).resolves.toEqual({ query: payload });
   });
 
+  it.each(["Running", "Failed"])("retrieves a persisted %s record without inventing an answer", async (status) => {
+    const payload = { ...baseQuery, status, answer: null, groundingStatus: null, citations: [], error: status === "Failed" ? { code: "VULCANX_TIMEOUT", message: "The query failed." } : null };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(payload)));
+    await expect(getKnowledgeQuery(queryId)).resolves.toEqual({ query: payload });
+  });
+
+  it.each([
+    { ...baseQuery, answer: {} },
+    { ...baseQuery, citations: [null] },
+    { ...baseQuery, citations: [{ ...baseQuery.citations[0], source: { id: 7 } }] },
+    { ...baseQuery, citations: [{ ...baseQuery.citations[0], rawTitle: {} }] },
+    { ...baseQuery, error: { message: {} } },
+    { ...baseQuery, isMock: "false" },
+    { ...baseQuery, groundingStatus: {} },
+  ])("rejects malformed nested response data safely", async (payload) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(payload)));
+    await expect(getKnowledgeQuery(queryId)).resolves.toMatchObject({ problem: { status: 502, errorCode: "KNOWLEDGE_INVALID_RESPONSE", queryId } });
+  });
+
+  it("rejects malformed ProblemDetails without rendering objects as text", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ status: 503, title: "Unavailable", detail: {}, queryId }, { status: 503 })));
+    await expect(getKnowledgeQuery(queryId)).resolves.toMatchObject({ problem: { status: 503, errorCode: "KNOWLEDGE_INVALID_ERROR_RESPONSE", queryId } });
+  });
+
   it.each([400, 404, 422, 429, 502, 503, 504])("preserves ProblemDetails status %i and queryId", async (status) => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ status, title: "Backend failure", detail: "Safe detail", errorCode: "SAFE", queryId }, { status })));
     await expect(getKnowledgeQuery(queryId)).resolves.toEqual({ problem: { status, title: "Backend failure", detail: "Safe detail", errorCode: "SAFE", queryId } });

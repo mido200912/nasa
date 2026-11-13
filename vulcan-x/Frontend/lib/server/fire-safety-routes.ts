@@ -29,10 +29,34 @@ export async function jsonPost(request: Request, path: "/api/habitat-analyses" |
     return Response.json({ status: 415, title: "Unsupported media type", detail: "Use application/json.", errorCode: "UNSUPPORTED_MEDIA_TYPE" }, { status: 415, headers: { "Content-Type": "application/problem+json; charset=utf-8" } });
   }
   let body: unknown;
-  try { body = await request.json(); } catch {
+  try { body = await limitedJson(request); } catch (cause) {
+    if (cause instanceof RangeError) return Response.json({ status: 413, title: "Request body is too large", errorCode: "REQUEST_BODY_TOO_LARGE" }, { status: 413, headers: { "Content-Type": "application/problem+json; charset=utf-8", "Cache-Control": "no-store" } });
+    if (request.signal.aborted) return Response.json({ status: 499, title: "Request cancelled", errorCode: "REQUEST_CANCELLED" }, { status: 499 });
     return Response.json({ status: 400, title: "Invalid JSON", detail: "The request body must be valid JSON.", errorCode: "INVALID_JSON" }, { status: 400, headers: { "Content-Type": "application/problem+json; charset=utf-8" } });
   }
   return proxyFireSafetyApi(request, { method: "POST", path, body });
+}
+
+async function limitedJson(request: Request): Promise<unknown> {
+  const limit = 32 * 1024;
+  if (Number(request.headers.get("content-length")) > limit) throw new RangeError("Body limit");
+  const reader = request.body?.getReader();
+  if (!reader) throw new SyntaxError("Missing JSON");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) { await reader.cancel(); throw new RangeError("Body limit"); }
+      chunks.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
 }
 
 function permittedQuery(request: Request, names: readonly QueryName[]): URLSearchParams {

@@ -46,15 +46,15 @@ export class AiController {
         );
       }
 
-      const response = await this.ragService.query(parseResult.data);
+      const response = await this.ragService.query(parseResult.data, c.req.raw.signal);
       return c.json(response, 200);
     } catch (err: any) {
-      console.error('[AiController] Error processing query:', err);
+      if (c.req.raw.signal.aborted) return c.json({ success: false, error: 'Request cancelled' }, 499);
+      console.error('[AiController] Query processing failed');
       return c.json(
         {
           success: false,
           error: 'An internal error occurred while processing the AI query',
-          message: err?.message || 'Unknown error',
         },
         500
       );

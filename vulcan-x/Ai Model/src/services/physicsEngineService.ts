@@ -20,7 +20,8 @@ export class PhysicsEngineService {
    * Evaluates planetary & habitat fire hazards based on NASA PSI empirical data
    * and generates precise 3D rendering parameters + scientific explanation.
    */
-  public async evaluateHazard(request: PhysicsEngineRequest): Promise<PhysicsEngineResponse> {
+  public async evaluateHazard(request: PhysicsEngineRequest, signal?: AbortSignal): Promise<PhysicsEngineResponse> {
+    signal?.throwIfAborted();
     const { target_planet_or_habitat, oxygen_concentration, pressure_psi, material_type } = request;
 
     // 1. Planetary & habitat physics constants
@@ -190,21 +191,16 @@ export class PhysicsEngineService {
           `Visual Flame Geometry: ${flame_geometry_type}\n\n` +
           `Output the scientific explanation sentence:`;
 
-        // 8-second race timeout for real-time 3D simulation responsiveness
-        const timeoutPromise = new Promise<{ text: string }>((_, reject) =>
-          setTimeout(() => reject(new Error('AI explanation generation timed out (8s limit for 3D canvas responsiveness)')), 8000)
-        );
-
-        const aiRes = await Promise.race([
-          this.aiProvider.generateCompletion(userPrompt, systemPrompt),
-          timeoutPromise,
-        ]);
+        // Abort the actual provider work, rather than leaving the losing race running.
+        const explanationSignal = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(8000)]);
+        const aiRes = await this.aiProvider.generateCompletion(userPrompt, systemPrompt, explanationSignal);
 
         if (aiRes?.text && aiRes.text.trim().length > 25) {
           scientific_explanation = aiRes.text.trim().replace(/^["']|["']$/g, '');
         }
       } catch (err: any) {
-        console.warn(`[PhysicsEngineService] Real-time 3D AI explanation fell back to deterministic baseline: ${err?.message || err}`);
+        signal?.throwIfAborted();
+        console.warn('[PhysicsEngineService] Provider unavailable; retaining deterministic baseline');
       }
     }
 

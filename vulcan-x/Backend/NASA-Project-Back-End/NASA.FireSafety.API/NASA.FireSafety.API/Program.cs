@@ -1,10 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using NASA.FireSafety.API.Data;
 using NASA.FireSafety.API.Interfaces;
+using NASA.FireSafety.API.Middleware;
 using NASA.FireSafety.API.Services;
 using VulcanX.Infrastructure.ExternalServices.VulcanXAI;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = RequestProtectionMiddleware.MaximumBodyBytes);
+builder.Services.AddSingleton<RequestConcurrencyLimits>();
+builder.Services.AddOptions<HabitatSubmissionOptions>().Bind(builder.Configuration.GetSection("HabitatSubmission"))
+    .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.ApprovedFixtureReference), "An enabled Habitat submission requires a science-team-approved fixture reference.")
+    .ValidateOnStart();
 
 // Add services to the container.
 
@@ -19,19 +25,15 @@ builder.Services
     .ValidateOnStart();
 builder.Services.AddHttpClient<IVulcanXAiClient, VulcanXAiClient>();
 
-var databaseConnectionString = builder.Configuration.GetConnectionString("FireSafetyDb");
-if (string.IsNullOrWhiteSpace(databaseConnectionString))
-{
-    throw new InvalidOperationException("Database configuration is missing. Set ConnectionStrings__FireSafetyDb or the ConnectionStrings:FireSafetyDb configuration value.");
-}
-
-builder.Services.AddDbContext<FireSafetyDbContext>(options => options.UseSqlServer(databaseConnectionString));
+builder.Services.AddDbContext<FireSafetyDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("FireSafetyDb")));
 builder.Services.AddScoped<ICatalogQueryService, CatalogQueryService>();
 builder.Services.AddScoped<ICuratedCatalogSeeder, CuratedCatalogSeeder>();
 builder.Services.AddScoped<IHabitatAnalysisService, HabitatAnalysisService>();
 builder.Services.AddScoped<IKnowledgeQueryService, KnowledgeQueryService>();
 
 var app = builder.Build();
+if (string.IsNullOrWhiteSpace(app.Configuration.GetConnectionString("FireSafetyDb")))
+    throw new InvalidOperationException("Database configuration is missing. Set ConnectionStrings__FireSafetyDb locally.");
 
 if (args.Contains("--seed-curated-catalog", StringComparer.OrdinalIgnoreCase))
 {
@@ -42,6 +44,8 @@ if (args.Contains("--seed-curated-catalog", StringComparer.OrdinalIgnoreCase))
 }
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<SafeErrorsMiddleware>();
+app.UseMiddleware<RequestProtectionMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -55,3 +59,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

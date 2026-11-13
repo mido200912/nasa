@@ -65,7 +65,7 @@ export class SimulatorController {
         );
       }
 
-      const simulation_result = await this.simulatorService.simulate(parseResult.data);
+      const simulation_result = await this.simulatorService.simulate(parseResult.data, c.req.raw.signal);
 
       return c.json(
         {
@@ -75,12 +75,12 @@ export class SimulatorController {
         200
       );
     } catch (err: any) {
-      console.error('[SimulatorController] Error executing stress test:', err);
+      if (c.req.raw.signal.aborted) return c.json({ success: false, error: 'Request cancelled' }, 499);
+      console.error('[SimulatorController] Stress test failed');
       return c.json(
         {
           success: false,
           error: 'An internal error occurred during simulation',
-          message: err?.message || 'Unknown error',
         },
         500
       );
@@ -127,15 +127,15 @@ export class SimulatorController {
         );
       }
 
-      const result = await this.physicsEngineService.evaluateHazard(parseResult.data);
+      const result = await this.physicsEngineService.evaluateHazard(parseResult.data, c.req.raw.signal);
       return c.json(result, 200);
     } catch (err: any) {
-      console.error('[SimulatorController] Error evaluating planetary hazard:', err);
+      if (c.req.raw.signal.aborted) return c.json({ success: false, error: 'Request cancelled' }, 499);
+      console.error('[SimulatorController] Hazard evaluation failed');
       return c.json(
         {
           success: false,
           error: 'An internal error occurred during planetary hazard evaluation',
-          message: err?.message || 'Unknown error',
         },
         500
       );

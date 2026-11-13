@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { flamePixels } from "./helpers/flame-pixels";
+import { mockCatalog } from "./helpers/catalog-fixtures";
+
+test.beforeEach(async ({ page }) => { await mockCatalog(page); });
 
 test("stress-test endpoint validates live requests", async ({ request }) => {
   const data = { environment: "lunar", oxygenLevel: 30, pressurePsi: 10.2, gravityG: 0.16, materialId: "pmma_acrylic" };

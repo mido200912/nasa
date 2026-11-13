@@ -13,6 +13,18 @@ npm run dev
 
 Open http://localhost:3000. The optional asset command downloads 2K Moon, Mars, and Earth maps, with a ten-second timeout per file. No external texture or model is needed for the procedural planet shaders. Optional maps are from [Solar System Scope](https://www.solarsystemscope.com/textures/), CC BY 4.0. No GLB is required: the station ring is procedural geometry.
 
+### Optional live backend
+
+Copy `.env.example` to ignored `.env.local` and set the server-only `FIRE_SAFETY_API_BASE_URL` to the ASP.NET Core origin from its launch settings/startup output. Never use `NEXT_PUBLIC_*` for backend addresses or provider keys. Browser requests use only allowlisted `/api/backend/*` routes; no browser CORS configuration or authentication is required. Without backend configuration the Offline Playbook and educational simulator still work.
+
+On `/dashboard/playbook`, choose **Live Knowledge**, select a real catalog environment, and ask a question or retrieve a persisted query ID. Only question/environment reach Vulcan-X. Material, year range, and max sources are persisted context, not retrieval filters. The current backend accepts language but does not persist or forward it. Returned title matches are local catalog matches, not scientific validation; unmatched titles stay unverified and unlinked. Failed responses retain `queryId` for retrieval. Requests are not automatically retried: cancellation does not roll back backend persistence, and another submission can create another record.
+
+The integration setup, remaining live-test gates, and execution evidence are in [`../Backend/NASA-Project-Back-End/docs/integration/frontend-backend-integration-plan.md`](../Backend/NASA-Project-Back-End/docs/integration/frontend-backend-integration-plan.md) and the adjacent milestone report.
+
+Milestone 6 adds bounded 32 KB proxy POST bodies and a configurable server-only timeout budget: `FIRE_SAFETY_AI_TIMEOUT_SECONDS=60` must match backend `VulcanX:TimeoutSeconds`; `FIRE_SAFETY_API_TIMEOUT_SECONDS=75` reserves five seconds for persistence cleanup plus transport overhead. If the actual hosting execution ceiling is known, set `FIRE_SAFETY_MAX_EXECUTION_SECONDS`; requests fail closed when proxy time plus five seconds cannot fit. A shorter hosting limit requires a designed asynchronous workflow, not a blindly raised timeout. No production platform/ceiling has been supplied or certified.
+
+Live SQL/browser checks are opt-in, **not mocked**: with the real backend/database/Vulcan-X running, set `FIRE_SAFETY_LIVE_SQL=1` and run `npx playwright test --workers=1`. The extra unavailable-service test is run separately with the actual Bun service stopped, `FIRE_SAFETY_LIVE_FAILURE=1`, and `--grep 'real unavailable'`. `tests/integration/controlled-vulcan.mjs` is a loopback-only timing harness for backend integration tests; it is never an application route or production service and invents no successful answer.
+
 ## Verify
 
 ```powershell
@@ -52,7 +64,7 @@ The restored solid-flame style is input-responsive: oxygen changes scale/brightn
 
 `lib/simulation.ts` documents the synthetic profiles and formula. Earth baseline is 1.0×; the supplied lunar example is 3.5×. Gravity changes the conceptual morphology, not a calibrated combustion law. LOI values are intentionally uncurated instead of fabricated. Program tags are reading context, not verified material-test citations. Water reduction starts with the brief's assumed 80% example; thermal/detection targets start blank until entered. No gain is represented as measured.
 
-`lib/playbook.ts` produces review-only templates. Free-text questions are attached for a human reviewer, **not interpreted** by an LLM. Changing context, incident, or question clears stale output; active streams cancel on context changes/unmount. Export includes the scenario snapshot, review acknowledgements, limitations, and public reading links. No operational agent quantities, nozzle pressures, or depressurization thresholds are invented. The AI SDK is installed for future integration but no provider, backend, corpus, retrieval pipeline, or live AI service is configured.
+`lib/playbook.ts` produces review-only templates. Free-text questions are attached for a human reviewer, **not interpreted** by an LLM. Changing context, incident, or question clears stale output; active streams cancel on context changes/unmount. Export includes the scenario snapshot, review acknowledgements, limitations, and public reading links. No operational agent quantities, nozzle pressures, or depressurization thresholds are invented. This Offline Playbook stays separate from the optional persisted Live Knowledge workflow.
 
 Dashboard verification: `tests/simulation.test.ts`, `tests/e2e/dashboard.spec.ts`, and `npm run qa:dashboard`. The latter captures completed modules and checks all six target widths at normal/200% root text sizing under `test-results/dashboard-visual/`. TestSprite is not configured; verification uses the existing Vitest and Playwright tools.
 
@@ -81,14 +93,14 @@ Dashboard verification: `tests/simulation.test.ts`, `tests/e2e/dashboard.spec.ts
 
 `node scripts/record-scroll.mjs` records ordinary desktop wheel scrolling to `test-results/scroll/motion-demo.webm` for visual review of continuous scrolling and steady content.
 
-**Not an operational safety system.** There is no backend, live RAG retrieval, LLM inference, or NASA-certified prediction connected. The UI says so rather than implying a working service.
+**Not an operational safety system.** Educational outputs are local illustrations, not NASA-certified predictions. Optional live workflows require a configured backend, database, and Vulcan-X service; AI interpretation and catalog citation matching are not scientific validation. Live Habitat submission remains disabled pending approved scientific inputs.
 
 The 3.5× burn-rate and +40% ignitability figures come from the supplied design brief. They are displayed as unvalidated scenario assumptions, not sourced NASA experimental conclusions. `lib/risk.ts` (landing preview) and `lib/simulation.ts` (dashboard) are bounded, illustrative UI formulas, not fitted physics models. Material scores cannot be used for engineering decisions.
 
 The playbook is a deterministic outline selected from three examples, not an autonomous emergency protocol. In a real incident use approved mission procedures. Earth-side specifications are conceptual and require applicable standards, testing, and qualified review. Research links in `lib/environments.ts` give context, not evidence supporting the demonstration's numeric outputs. Orbital spacing, station geometry, and flame diagrams are conceptual, not to scale.
 
-Future integration points: replace `lib/risk.ts` with a validated model adapter and the scripted generator with a reviewed, provenance-carrying API. Keep API credentials and retrieval infrastructure in the backend; never expose keys in client code.
+Future integration points: replace `lib/risk.ts` only with an independently validated model adapter. Keep the deterministic offline generator separate from live APIs. API credentials and retrieval infrastructure stay in the backend; never expose keys in client code.
 
 ## Scope
 
-All implementation, dependencies, assets, documentation, and tests live in `vulcan-x/Frontend`. Backend, AI Model, and repository-root files are unchanged.
+Frontend implementation, dependencies, assets, and tests live in `vulcan-x/Frontend`. Milestone 5 remains intact. Milestone 6 adds backend protections/cancellation cleanup and upstream cancellation handling, without database schema changes. Cross-service evidence lives under the backend's `docs/integration/` directory. Vitest is patched to 4.1.12; remaining development-only audit findings are documented in the execution report.

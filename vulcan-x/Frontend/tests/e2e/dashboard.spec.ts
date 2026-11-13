@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { mockCatalog } from "./helpers/catalog-fixtures";
+
+test.beforeEach(async ({ page }) => { await mockCatalog(page); });
 
 test("landing selection launches the shared Mars scenario and preserves it on return", async ({ page }) => {
   await page.goto("/");
@@ -14,20 +17,20 @@ test("landing selection launches the shared Mars scenario and preserves it on re
 test("presets, custom sliders, material changes and session reload stay synchronized", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByTestId("burn-multiplier")).toContainText("3.5×");
-  await page.getByRole("combobox", { name: "Environment", exact: true }).click();
+  await page.getByRole("combobox", { name: "Illustrative WebGL scenario", exact: true }).click();
   await page.getByRole("option", { name: "ISS lab", exact: true }).click();
   await expect(page.getByText("Spherical cool diffusion", { exact: true })).toBeVisible();
   const oxygen = page.getByRole("slider", { name: "Oxygen concentration", exact: true });
   await oxygen.focus(); await page.keyboard.press("End");
   await expect(oxygen).toHaveAttribute("aria-valuenow", "40");
-  await expect(page.getByRole("combobox", { name: "Environment", exact: true })).toContainText("Custom what-if");
+  await expect(page.getByRole("combobox", { name: "Illustrative WebGL scenario", exact: true })).toContainText("Custom what-if");
   await expect(page.getByRole("combobox", { name: "Environment preset", exact: true })).toHaveCount(0);
   await expect(page.locator(".cc-telemetry")).toContainText("Active scenario / custom");
-  await page.getByRole("combobox", { name: "Test material", exact: true }).click();
+  await page.getByRole("combobox", { name: "Illustrative material scenario", exact: true }).click();
   await page.getByRole("option", { name: "Teflon / PTFE", exact: true }).click();
   await page.reload();
   await expect(page.getByRole("slider", { name: "Oxygen concentration", exact: true })).toHaveAttribute("aria-valuenow", "40");
-  await expect(page.getByRole("combobox", { name: "Test material", exact: true })).toContainText("Teflon / PTFE");
+  await expect(page.getByRole("combobox", { name: "Illustrative material scenario", exact: true })).toContainText("Teflon / PTFE");
   await page.getByRole("button", { name: "Reset scenario", exact: true }).click();
   await expect(page.getByTestId("burn-multiplier")).toContainText("3.5×");
 });
@@ -58,7 +61,7 @@ test("a context change cancels stale playbooks, including an active stream", asy
   await page.goto("/dashboard/playbook");
   await page.getByRole("button", { name: "Generate outline", exact: true }).click();
   await page.getByRole("link", { name: "Stress-test Atmosphere & materials", exact: true }).click();
-  await page.getByRole("combobox", { name: "Environment", exact: true }).click();
+  await page.getByRole("combobox", { name: "Illustrative WebGL scenario", exact: true }).click();
   await page.getByRole("option", { name: "Mars habitat", exact: true }).click();
   await page.getByRole("link", { name: "Safety playbook Research & review", exact: true }).click();
   await expect(page.getByText("Ready for a local preview")).toBeVisible();
@@ -94,7 +97,7 @@ test("material search, empty state, source filter, comparator and simulator sele
   await page.getByRole("option", { name: "Nomex HT90-40", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "Second material", exact: true })).toContainText("Kapton wire insulation");
   await page.getByRole("link", { name: "Adjust atmosphere", exact: true }).click();
-  await expect(page.getByRole("combobox", { name: "Test material", exact: true })).toContainText("PMMA acrylic");
+  await expect(page.getByRole("combobox", { name: "Illustrative material scenario", exact: true })).toContainText("PMMA acrylic");
 });
 
 test("dashboard menus do not shift content and return keyboard focus", async ({ page }) => {
@@ -103,7 +106,7 @@ test("dashboard menus do not shift content and return keyboard focus", async ({ 
   // measure the same DOM heading rather than querying the hidden role.
   const heading = page.locator(".cc-page-heading h1");
   const initial = await heading.boundingBox();
-  const trigger = page.getByRole("combobox", { name: "Test material", exact: true });
+  const trigger = page.getByRole("combobox", { name: "Illustrative material scenario", exact: true });
   await trigger.click(); await expect(page.getByRole("listbox")).toBeVisible();
   const opened = await heading.boundingBox();
   expect(Math.abs(opened!.x - initial!.x)).toBeLessThan(1);
@@ -134,7 +137,7 @@ test("simulator controls and illustration remain usable without WebGL", async ({
   });
   await page.goto("/dashboard");
   await expect(page.getByText("3D unavailable · accessible illustration")).toBeVisible();
-  await page.getByRole("combobox", { name: "Environment", exact: true }).click();
+  await page.getByRole("combobox", { name: "Illustrative WebGL scenario", exact: true }).click();
   await page.getByRole("option", { name: "ISS lab", exact: true }).click();
   await expect(page.getByRole("img", { name: "Conceptual spherical diffusion envelope", exact: true })).toBeVisible();
   await expect(page.getByRole("slider", { name: "Gravity", exact: true })).toHaveAttribute("aria-valuenow", "0");

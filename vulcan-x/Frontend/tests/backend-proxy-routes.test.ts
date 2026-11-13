@@ -73,6 +73,14 @@ describe("same-origin backend proxy route mapping", () => {
 });
 
 describe("backend proxy safety and error behavior", () => {
+  it.each([false, true])("rejects an oversized JSON body before forwarding (declared length: %s)", async (declared) => {
+    vi.stubEnv("FIRE_SAFETY_API_BASE_URL", backendBase);
+    const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+    const body = JSON.stringify({ question: "x".repeat(32769) });
+    const response = await knowledgePost(request("/api/backend/knowledge/queries", { method: "POST", headers: { "Content-Type": "application/json", ...(declared ? { "Content-Length": String(body.length) } : {}) }, body }));
+    expect(response.status).toBe(413);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it.each([400, 404, 422, 429, 502, 503, 504])("preserves a valid backend ProblemDetails response with status %i", async (status) => {
     vi.stubEnv("FIRE_SAFETY_API_BASE_URL", backendBase);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ status, title: "Backend title", detail: "Safe detail", errorCode: "SAFE", traceId: "trace", analysisId: guid, unexpected: "not forwarded" }, { status })));

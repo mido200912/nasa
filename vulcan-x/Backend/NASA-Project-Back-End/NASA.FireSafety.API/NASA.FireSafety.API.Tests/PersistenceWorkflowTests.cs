@@ -106,14 +106,43 @@ public sealed class PersistenceWorkflowTests
         return (environment, material);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancellationPersistsFailedWithoutPartialSuccess(bool habitat)
+    {
+        await using var db = CatalogTestSupport.CreateContext();
+        var (environment, material) = await AddCatalogAsync(db);
+        using var cancelled = new CancellationTokenSource();
+        var client = new StubAiClient { Cancel = cancelled };
+        if (habitat)
+        {
+            // Technical service fixture only, never an approved/live scientific input.
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new HabitatAnalysisService(db, client).CreateAsync(new CreateHabitatAnalysisRequest { EnvironmentId = environment.Id, MaterialId = material.Id, OxygenVolumePercent = 21, PressureKPa = 100 }, cancelled.Token));
+            var saved = await db.HabitatAnalyses.SingleAsync();
+            Assert.Equal(AnalysisStatus.Failed, saved.Status);
+            Assert.Equal("REQUEST_CANCELLED", saved.ErrorCode);
+            Assert.Empty(await db.AnalysisFactors.ToListAsync());
+        }
+        else
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new KnowledgeQueryService(db, client).CreateAsync(new CreateKnowledgeQueryRequest { Question = "Cancellation regression fixture", EnvironmentId = environment.Id }, cancelled.Token));
+            var saved = await db.KnowledgeQueries.SingleAsync();
+            Assert.Equal(AnalysisStatus.Failed, saved.Status);
+            Assert.Equal("REQUEST_CANCELLED", saved.ErrorCode);
+            Assert.Null(saved.Answer);
+        }
+    }
+
     private sealed class StubAiClient : IVulcanXAiClient
     {
+        public CancellationTokenSource? Cancel { get; init; }
         public StressTestResponse? StressResponse { get; init; }
         public AiQueryResponse? QueryResponse { get; init; }
         public VulcanXFailureKind? StressFailure { get; init; }
         public VulcanXFailureKind? QueryFailure { get; init; }
-        public Task<AiQueryResponse> QueryAsync(AiQueryRequest request, CancellationToken cancellationToken) => QueryFailure is { } failure ? throw new VulcanXServiceException(failure, "failure") : Task.FromResult(QueryResponse ?? new AiQueryResponse());
-        public Task<StressTestResponse> RunStressTestAsync(StressTestRequest request, CancellationToken cancellationToken) => StressFailure is { } failure ? throw new VulcanXServiceException(failure, "failure") : Task.FromResult(StressResponse ?? new StressTestResponse());
+        public Task<AiQueryResponse> QueryAsync(AiQueryRequest request, CancellationToken cancellationToken) { Cancel?.Cancel(); cancellationToken.ThrowIfCancellationRequested(); return QueryFailure is { } failure ? throw new VulcanXServiceException(failure, "failure") : Task.FromResult(QueryResponse ?? new AiQueryResponse()); }
+        public Task<StressTestResponse> RunStressTestAsync(StressTestRequest request, CancellationToken cancellationToken) { Cancel?.Cancel(); cancellationToken.ThrowIfCancellationRequested(); return StressFailure is { } failure ? throw new VulcanXServiceException(failure, "failure") : Task.FromResult(StressResponse ?? new StressTestResponse()); }
         public Task<HazardEvaluationResponse> EvaluateHazardAsync(HazardEvaluationRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<DatasetCatalogResponse> GetDatasetsAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<VulcanXHealthResponse> GetHealthAsync(CancellationToken cancellationToken) => throw new NotSupportedException();

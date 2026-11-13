@@ -54,6 +54,8 @@ console.log(`• Datasets Catalog      : GET  http://localhost:${env.PORT}/api/v
 console.log('================================================================\n');
 
 export default {
+  // Private upstream by default; never expose diagnostic/key-management routes through Next.js.
+  hostname: process.env.VULCANX_BIND_HOST || '127.0.0.1',
   port: env.PORT,
   fetch: app.fetch,
 };

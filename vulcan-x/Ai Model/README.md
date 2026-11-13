@@ -9,6 +9,16 @@
 
 ## 🚀 Overview
 
+### Integration and execution boundaries
+
+This service is a private upstream of ASP.NET Core, not a browser API. It binds to loopback by default (`VULCANX_BIND_HOST=127.0.0.1`). Container deployments must select an explicitly private interface/network; do not publish diagnostics, `/test`, key-status, or key-reset through the frontend/backend allowlist.
+
+Knowledge currently composes source-bound corpus excerpts; it does **not** call a provider merely because credentials exist. A successful Knowledge response is not proof of provider inference or scientific validation. Its `sources` currently contain source URLs; the backend's exact-title matcher may correctly retain these as unmatched/unverified raw labels.
+
+Provider operations accept caller cancellation without rotating keys on cancellation. Per-key attempts are bounded at 40 seconds and the overall provider operation at 55 seconds; the ASP.NET AI budget defaults to 60 seconds and Next.js to 75 seconds. Hazard explanation requests additionally cancel actual provider work after 8 seconds instead of leaving a losing promise running. No numerical simulation formula or scientific validation claim was added by the Milestone 6 changes.
+
+Run `bun install --frozen-lockfile` and `bun test`. Cancellation tests use a controlled fake transport, not paid inference. For complete SQL/browser evidence and remaining scientific/deployment gates, see `../Backend/NASA-Project-Back-End/docs/integration/milestone-5-6-report.md`.
+
 **Vulcan-X** is an AI-powered combustion data analytics and fire safety engine designed to interpret NASA **Physical Science Informatics (PSI)** combustion experiments (including **BASS, Saffire, ACME, FLEX, and CFI**). 
 
 The platform protects human spaceflight habitats (**ISS, Lunar Bases, Mars Rovers**) and translates microgravity combustion findings into terrestrial dual-use applications for municipal firefighters and high-oxygen facilities.

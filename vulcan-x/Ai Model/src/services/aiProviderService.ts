@@ -15,8 +15,8 @@ export class AiProviderService {
   private slots: InternalKeySlot[];
   private activeSlotIndex: number = 0;
 
-  constructor() {
-    this.slots = env.API_KEYS.map((config, idx) => ({
+  constructor(configs: ApiKeySlotConfig[] = env.API_KEYS) {
+    this.slots = configs.map((config, idx) => ({
       config,
       status: config.key ? (idx === 0 ? 'ACTIVE' : 'STANDBY') : 'ERROR',
       failCount: 0,
@@ -41,12 +41,15 @@ export class AiProviderService {
    */
   public async generateCompletion(
     userPrompt: string,
-    systemPrompt: string = 'You are the Vulcan-X NASA Space Apps AI combustion safety expert.'
+    systemPrompt: string = 'You are the Vulcan-X NASA Space Apps AI combustion safety expert.',
+    signal?: AbortSignal
   ): Promise<{ text: string; keyUsed: number; provider: string; model: string }> {
+    const operation = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(55_000)]);
     const totalSlots = this.slots.length;
     let attempts = 0;
 
     while (attempts < totalSlots) {
+      operation.throwIfAborted();
       const slotIndex = (this.activeSlotIndex + attempts) % totalSlots;
       const slot = this.slots[slotIndex];
 
@@ -78,7 +81,7 @@ export class AiProviderService {
         console.log(
           `[AiProviderService] Requesting OpenRouter via Key Slot #${slot.config.index} (Model: ${slot.config.model})...`
         );
-        const result = await this.callOpenRouterApi(slot, userPrompt, systemPrompt);
+        const result = await this.callOpenRouterApi(slot, userPrompt, systemPrompt, operation);
 
         // Success! Reset error state completely
         slot.successCount++;
@@ -107,6 +110,7 @@ export class AiProviderService {
           model: slot.config.model,
         };
       } catch (err: any) {
+        operation.throwIfAborted(); // Cancellation must not consume another key or return fallback success.
         const errorMessage = err?.message || String(err);
         const isRateLimit = errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit');
         const isQuota =
@@ -116,7 +120,7 @@ export class AiProviderService {
           errorMessage.toLowerCase().includes('quota');
 
         slot.failCount++;
-        slot.lastError = errorMessage;
+        slot.lastError = 'Provider request failed';
         slot.lastUsedAt = new Date().toISOString();
 
         if (isRateLimit || isQuota) {
@@ -128,7 +132,7 @@ export class AiProviderService {
         } else {
           slot.status = 'ERROR';
           slot.cooldownUntil = Date.now() + 15000; // 15s quick retry cooldown
-          console.error(`[AiProviderService] ❌ OpenRouter Key Slot #${slot.config.index} error: ${errorMessage}`);
+          console.error(`[AiProviderService] OpenRouter Key Slot #${slot.config.index} request failed`);
         }
 
         console.warn(`[AiProviderService] 🔄 Auto-rotating to next OpenRouter key in pool...`);
@@ -147,11 +151,10 @@ export class AiProviderService {
   private async callOpenRouterApi(
     slot: InternalKeySlot,
     userPrompt: string,
-    systemPrompt: string
+    systemPrompt: string,
+    signal: AbortSignal
   ): Promise<string> {
     const url = `${slot.config.baseUrl.replace(/\/+$/, '')}/chat/completions`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 40000); // 40s timeout for free reasoning models
 
     try {
       const response = await fetch(url, {
@@ -171,19 +174,17 @@ export class AiProviderService {
           temperature: 0.2, // Low temperature for scientific precision & zero hallucination
           max_tokens: 2500,
         }),
-        signal: controller.signal,
+        signal: AbortSignal.any([signal, AbortSignal.timeout(40_000)]),
       });
 
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const data = (await response.json()) as any;
       if (data?.error) {
-        throw new Error(`OpenRouter Error: ${data.error.message || JSON.stringify(data.error)}`);
+        throw new Error('Provider returned an unsuccessful response');
       }
       const choice = data?.choices?.[0];
       const message = choice?.message;
@@ -195,13 +196,11 @@ export class AiProviderService {
       }
 
       if (!content) {
-        const detail = choice?.finish_reason ? `finish_reason: ${choice.finish_reason}` : JSON.stringify(data).slice(0, 150);
-        throw new Error(`OpenRouter returned empty content (${detail})`);
+        throw new Error('Provider returned empty content');
       }
 
       return content.trim();
     } catch (err: any) {
-      clearTimeout(timeoutId);
       throw err;
     }
   }

@@ -2,7 +2,6 @@ import "server-only";
 import { env } from "node:process";
 
 const responseLimitBytes = 1024 * 1024;
-const proxyTimeoutMs = 10_000;
 
 const allowedBackendPaths = [
   /^\/api\/environments$/,
@@ -31,8 +30,10 @@ export async function proxyFireSafetyApi(request: Request, proxyRequest: Backend
   }
 
   let target: URL;
+  let proxyTimeoutMs: number;
   try {
     target = buildTarget(request, proxyRequest.path, proxyRequest.query);
+    proxyTimeoutMs = timeoutBudgetMs();
   } catch (cause) {
     if (cause instanceof BackendConfigurationError) {
       return problem(503, "Backend service is not configured", "The application backend configuration is unavailable.", "BACKEND_CONFIGURATION_ERROR");
@@ -66,6 +67,19 @@ export async function proxyFireSafetyApi(request: Request, proxyRequest: Backend
     }
     return problem(502, "Backend service is unavailable", "The application backend could not be reached.", "BACKEND_UNAVAILABLE");
   }
+}
+
+function timeoutBudgetMs(): number {
+  // 60s backend AI + 5s bounded failure persistence + 10s transport overhead.
+  const seconds = Number(env.FIRE_SAFETY_API_TIMEOUT_SECONDS ?? "75");
+  const upstream = Number(env.FIRE_SAFETY_AI_TIMEOUT_SECONDS ?? "60");
+  const ceiling = env.FIRE_SAFETY_MAX_EXECUTION_SECONDS;
+  if (!Number.isInteger(upstream) || upstream < 1 || upstream > 120
+    || !Number.isInteger(seconds) || seconds < upstream + 15 || seconds > 300
+    || (ceiling !== undefined && (!Number.isInteger(Number(ceiling)) || seconds + 5 > Number(ceiling)))) {
+    throw new BackendConfigurationError("Incompatible proxy/deployment timeout budget.");
+  }
+  return seconds * 1000;
 }
 
 function buildTarget(request: Request, path: string, query?: URLSearchParams): URL {

@@ -1,5 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { flamePixels } from "./helpers/flame-pixels";
+import { mockCatalog } from "./helpers/catalog-fixtures";
+
+test.beforeEach(async ({ page }) => { await mockCatalog(page); });
 
 test("SVG fallback responds to oxygen, pressure, gravity and material too", async ({ page }) => {
   await page.addInitScript(() => {
@@ -21,7 +24,7 @@ test("SVG fallback responds to oxygen, pressure, gravity and material too", asyn
   await sliderExtreme(page, "Gravity", "Home");
   await expect(page.getByRole("img", { name: "Conceptual spherical diffusion envelope", exact: true })).toBeVisible();
   const zeroGravity = await envelope.getAttribute("transform");
-  await page.getByRole("combobox", { name: "Test material", exact: true }).click();
+  await page.getByRole("combobox", { name: "Illustrative material scenario", exact: true }).click();
   await page.getByRole("option", { name: "Teflon / PTFE", exact: true }).click();
   await expect(envelope).not.toHaveAttribute("transform", zeroGravity!);
 });
@@ -62,10 +65,10 @@ for (const width of [375, 1440]) {
     expect(zeroGravity.blue).toBeGreaterThan(200);
     expect(earthGravity.aspect).toBeLessThan(0.65);
 
-    await page.getByRole("combobox", { name: "Test material", exact: true }).click();
+    await page.getByRole("combobox", { name: "Illustrative material scenario", exact: true }).click();
     await page.getByRole("option", { name: "Teflon / PTFE", exact: true }).click();
     const ptfe = await flamePixels(page);
-    await page.getByRole("combobox", { name: "Test material", exact: true }).click();
+    await page.getByRole("combobox", { name: "Illustrative material scenario", exact: true }).click();
     await page.getByRole("option", { name: "Acoustic melamine foam", exact: true }).click();
     const foam = await flamePixels(page);
     expect(foam.brightness).toBeGreaterThan(ptfe.brightness * 1.2);

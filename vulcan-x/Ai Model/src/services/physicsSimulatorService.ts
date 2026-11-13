@@ -12,7 +12,8 @@ export class PhysicsSimulatorService {
    * Evaluates habitat atmospheric and material combustion risk based on NASA PSI empirical models
    * and enriches recommendations using the OpenRouter AI Engine.
    */
-  public async simulate(request: StressTestRequest): Promise<SimulationResult> {
+  public async simulate(request: StressTestRequest, signal?: AbortSignal): Promise<SimulationResult> {
+    signal?.throwIfAborted();
     const { habitat, oxygen_concentration, pressure_psi, material_type } = request;
 
     // 1. Environmental gravity factor (NASA BASS/Saffire findings)
@@ -96,12 +97,13 @@ export class PhysicsSimulatorService {
           `Safety Status: ${safety_status.toUpperCase()}\n\n` +
           `Generate the official Vulcan-X AI Engineering Protocol Recommendation:`;
 
-        const aiResponse = await this.aiProvider.generateCompletion(userPrompt, systemPrompt);
+        const aiResponse = await this.aiProvider.generateCompletion(userPrompt, systemPrompt, signal);
         if (aiResponse?.text && aiResponse.text.trim().length > 20) {
           finalRecommendation = aiResponse.text.trim();
         }
       } catch (err) {
-        console.warn('[PhysicsSimulatorService] AI generation for simulation recommendation failed, using deterministic baseline:', err);
+        signal?.throwIfAborted();
+        console.warn('[PhysicsSimulatorService] Provider unavailable; retaining deterministic baseline');
       }
     }
 
