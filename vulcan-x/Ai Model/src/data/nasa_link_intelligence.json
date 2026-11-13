@@ -1,0 +1,618 @@
+{
+  "project": "Vulcan-X (NASA Space Apps Challenge 2026)",
+  "challenge": "Flame in Freefall: AI-Powered Fire Safety Insights",
+  "generated_at": "2026-11-13T20:00:00.000Z",
+  "total_sources_analyzed": 8,
+  "sources": [
+    {
+      "source_id": "nasa-glenn-combustion-science",
+      "url": "https://www.nasa.gov/glenn/glenn-expertise-space-exploration/physical-sciences-program/combustion-science/",
+      "title": "Combustion Science — NASA Glenn Research Center",
+      "facility": "NASA Glenn Research Center (GRC), Cleveland, Ohio",
+      "category": "psi_research",
+      "primary_discipline": "Microgravity Combustion & Flame Physics",
+      "target_environments": ["iss", "lunar_base", "earth"],
+      "executive_summary": "NASA Glenn Research Center leads NASA's Combustion Science Discipline in physical sciences, conducting experiments in microgravity on drop towers and the International Space Station. In the United States, combustion processes contribute to about 85% of delivered energy and are an integral part in many industrial fabrication processes. Combustion produces greenhouse gases and soot, contributing to global warming and causing significant health concerns. The Space Station environment provides an important test-bed for studying spacecraft fire risk.",
+      "us_energy_stat": "Combustion processes contribute to about 85% of delivered energy in the United States and are an integral part in many industrial fabrication processes.",
+      "combustion_definition": "Combustion occurs when fuel and oxygen react to produce carbon dioxide, water and heat.",
+      "gravity_physics": "Typical flame temperatures are on the order of 2,300 degrees Kelvin, whereas ambient temperatures are approximately 300 degrees Kelvin. This produces an eight-fold density change over the scale of a centimeter. The resultant density gradient induces a strong velocity field that dominates all but the highest flow fields. This flow field causes the flame to lift and point upward. The resultant flow instabilities cause the flicker typical of flames on Earth.",
+      "microgravity_benefit": "In the absence of gravity, buoyancy can be suppressed, and the analyses can be reduced to much simpler one-dimensional systems. By varying or eliminating the effects of gravity, we can extract fundamental data that are important for understanding combustion systems.",
+      "current_experiments": [
+        {
+          "acronym": "FM2",
+          "full_name": "Flammability of Materials on the Moon",
+          "status": "current",
+          "description": "FM2 is the first-ever combustion experiment to be performed on another planetary body. Building on the success of the decades-long combustion science ground (1g) program and International Space Station (ISS) microgravity (~0g) combustion experiment campaigns, FM2 investigates burning materials on the Moon at its 1/6 reduced gravity level.",
+          "test_subject": "SIBAL fabric (cotton-fiberglass blend) burning in air in lunar gravity simulated in drop tower centrifuge",
+          "significance": "First-ever combustion experiment on another planetary body"
+        },
+        {
+          "acronym": "SoFIE",
+          "full_name": "Solid Fuel Ignition and Extinction investigation",
+          "status": "current",
+          "description": "Fire can be a catastrophic hazard for manned spacecraft. NASA mitigates the risk of fire with the implementation of NASA-STD-6001, which establishes program requirements for evaluation, testing, and selection of materials to preclude unsafe conditions related to flammability, odor, offgassing, and fluid compatibility. NASA-STD-6001 implements a 1-g flame propagation test for proposed space flight materials which some researchers believe is not conservative in low-g.",
+          "notable_operations": "ESA astronaut and Expedition 67 Flight Engineer Samantha Cristoforetti worked inside the International Space Station's Unity module reconfiguring components for SoFIE that explores fire growth and fire safety techniques in space.",
+          "standard_referenced": "NASA-STD-6001"
+        },
+        {
+          "acronym": "FLARE",
+          "full_name": "Flammability Limits At Reduced-g Experiment",
+          "status": "current",
+          "description": "Develops a methodology to correlate material flammability limits in normal gravity and microgravity, which allows quantitative estimation of material flammability limit in microgravity based on the flammability data obtained on the ground.",
+          "international_team": ["JAXA", "NASA", "ESA", "CNES", "DLR", "universities in Japan", "universities in France", "universities in Germany", "universities in USA"],
+          "objective": "Develop methodology to correlate material flammability limits in normal and microgravity AND allow quantitative estimation of material flammability limit in microgravity based on the flammability data obtained on the ground."
+        }
+      ],
+      "archived_experiments": [
+        {
+          "acronym": "ACME",
+          "full_name": "Advanced Combustion via Microgravity Experiments",
+          "status": "archived",
+          "description": "Focused on advanced combustion technology via fundamental microgravity research. The primary goal is to improve efficiency and reduce pollutant emission in practical terrestrial combustion.",
+          "critical_data_point": "Buoyancy removal produces spherical, quasi-steady laminar diffusion flames enabling accurate determination of chemical kinetics and soot formation pathways."
+        },
+        {
+          "acronym": "BASS",
+          "full_name": "Burning and Suppression of Solids",
+          "status": "archived",
+          "description": "Examines the burning and extinction characteristics of a wide variety of fuel samples in microgravity.",
+          "critical_data_point": "Demonstrated that low-speed ambient air currents (0.05–0.2 m/s) in space stations supply steady oxygen via forced convection without blowing the flame out, sustaining smoldering longer than on Earth."
+        },
+        {
+          "acronym": "DAFT",
+          "full_name": "Dust and Aerosol Measurement Feasibility Test",
+          "status": "archived",
+          "description": "Designed to ensure that a modified P-Trak — a key component of the forthcoming NASA Smoke Aerosol Measurement Experiment (SAME) — will perform properly in the unique environment of microgravity.",
+          "relationship": "Precursor experiment to SAME"
+        },
+        {
+          "acronym": "FLEX",
+          "full_name": "Flame Extinguishment Experiment",
+          "status": "archived",
+          "description": "Designed to assess and quantify the effectiveness of inert-gas suppressants in microgravity and obtain the most conservative estimate of the limiting oxygen index for steady combustion.",
+          "critical_data_point": "Discovery of 'cool flame' burning regimes where liquid hydrocarbon droplets continue reacting at very low temperatures (600–800 K) with no visible soot or luminous flame."
+        },
+        {
+          "acronym": "Saffire",
+          "full_name": "Spacecraft Fire Safety Demonstration",
+          "status": "archived",
+          "description": "Creating a safe environment for astronauts is the number one priority for all crew missions. Saffire is the largest fire safety in space experiment."
+        },
+        {
+          "acronym": "SAME",
+          "full_name": "Smoke Aerosol Measurement Experiment",
+          "status": "archived",
+          "description": "Spacecraft smoke detectors must detect different types of smoke. For example, hydrocarbon fuels typically produce soot and plastics produce droplets of recondensed polymer fragments.",
+          "key_insight": "Smoke detectors in space must detect BOTH soot (from hydrocarbons) AND recondensed polymer fragments (from plastics) — two completely different aerosol types"
+        },
+        {
+          "acronym": "SLICE",
+          "full_name": "Structure & Liftoff in Combustion Experiment",
+          "status": "archived",
+          "description": "Coflow laminar diffusion flames are especially valuable for studies of combustion because of the availability of accurate numerical modeling with that flame configuration."
+        },
+        {
+          "acronym": "SPICE",
+          "full_name": "Smoke Point In Co-flow Experiment",
+          "status": "archived",
+          "description": "Continues the study of fundamental phenomena related to understanding the mechanisms controlling the stability and extinction of jet diffusion flames begun with the Laminar Soot Processes (LSP) on STS-94."
+        }
+      ],
+      "facilities_on_iss": [
+        {
+          "name": "Combustion Integrated Rack (CIR)",
+          "location": "U.S. Laboratory Module (Destiny)",
+          "combustion_chamber_volume": "100-liter combustion chamber",
+          "developer": "NASA Glenn Research Center",
+          "launched": "November 2008",
+          "launch_vehicle": "Space Shuttle STS-126",
+          "description": "The only rack on ISS dedicated to combustion experimentation. Enables investigators to perform combustion research to understand the fundamentals of the combustion process, understand fire safety, and methods for suppression of fires in space.",
+          "note": "Main feature is a 100-liter combustion chamber to provide the necessary safety features necessary for the various combustion investigations."
+        },
+        {
+          "name": "Multi-user Droplet Combustion Apparatus (MDCA)",
+          "developer": "NASA Glenn Research Center",
+          "launched": "November 2008",
+          "description": "A multi-user facility designed to accommodate different droplet combustion science experiments. Conducts experiments using the Combustion Integrated Rack (CIR) of the NASA Glenn Research Center's Fluids and Combustion Facility (FCF).",
+          "advantage": "In conjunction with the CIR, allows for cost-effective extended access to the microgravity environment, not possible on previous space flights."
+        }
+      ],
+      "core_physics_takeaways": [
+        "In microgravity (g~0), density differences do not cause hot combustion products to rise — zero buoyancy.",
+        "Heat and mass transfer are dictated primarily by molecular diffusion rather than natural convection.",
+        "Flames are spherical, cooler, dimmer blue, and emit radiation isotropically in all directions.",
+        "Extinction occurs predominantly via radiative heat loss or dilution rather than convective cooling.",
+        "The simplest combustor (e.g., kitchen stove) remains beyond our detailed numerical modeling capabilities.",
+        "Combustion process involves a large number of chemical species (hundreds) and reactions (even thousands).",
+        "Flame temperatures ~2,300K vs ambient ~300K = 8-fold density change over 1 cm scale."
+      ],
+      "practical_safety_applications": [
+        "Defines material flammability acceptance criteria for space vehicle interiors.",
+        "Calibrates required concentration and discharge duration for gaseous fire suppression canisters.",
+        "Directly informs ventilation shutoff protocols during in-flight fire alerts.",
+        "FM2 provides lunar base fire safety data at 1/6g — critical for Artemis program habitats."
+      ],
+      "page_editor": "Timothy A. Reckart",
+      "page_last_updated": "Sep 04, 2025",
+      "related_corpus_chunk_ids": [
+        "psi-combustion-bass",
+        "psi-combustion-acme",
+        "psi-combustion-flex",
+        "guide-iss-fire-safety"
+      ]
+    },
+    {
+      "source_id": "nasa-researchers-guide-combustion",
+      "url": "https://www.nasa.gov/missions/station/a-researchers-guide-to-combustion-science/",
+      "title": "A Researcher's Guide to: Combustion Science — International Space Station",
+      "facility": "NASA ISS Research Integration Office & NASA Glenn Research Center",
+      "category": "scientific_guide",
+      "primary_discipline": "Microgravity Combustion Research Handbook & Flight Facility Guide",
+      "target_environments": ["iss", "lunar_base", "mars_rover", "earth"],
+      "published_edition": "October 2015",
+      "published_date_online": "Jul 06, 2016",
+      "authors": [
+        { "name": "Suleyman A. Gokoglu", "affiliation": "NASA Glenn Research Center" },
+        { "name": "Daniel L. Dietrich", "affiliation": "NASA Glenn Research Center" },
+        { "name": "Dennis P. Stocker", "affiliation": "NASA Glenn Research Center" },
+        { "name": "Paul V. Ferkul", "affiliation": "Universities Space Research Association" },
+        { "name": "Sandy L. Olson", "affiliation": "NASA Glenn Research Center" },
+        { "name": "Michael C. Hicks", "affiliation": "NASA Glenn Research Center" }
+      ],
+      "download_formats": [
+        { "format": "EPUB", "size": "4.9MB", "note": "All eBook readers" },
+        { "format": "PDF", "size": "1.5MB", "note": "PDF readers" }
+      ],
+      "executive_summary": "Comprehensive NASA guide for scientists and payload engineers detailing the Combustion Integration Rack (CIR), physical science gloveboxes, diagnostic capabilities, and experimental methodologies aboard the ISS.",
+      "key_quotes_from_page": [
+        "Combustion processes remain among the most poorly controlled phenomena, yet have a significant impact on human health, comfort and safety.",
+        "For future exploration missions, fire safety is an important operational element to minimize the likelihood and impact of accidental fires in spacecraft and human habitats.",
+        "An improved knowledge of combustion in reduced gravity is essential to adapting fire safety concepts and systems to the conditions of the space environment."
+      ],
+      "core_physics_takeaways": [
+        "Combustion is an exothermic reaction between fuel and oxidizer yielding CO2, H2O, radicals, and sensible heat.",
+        "Gravitational removal reduces complex multi-dimensional fluid equations to 1D or spherically symmetric mathematical models.",
+        "Quiescent environments can lead to self-extinction as carbon dioxide blankets the flame front; however, subtle spacecraft ventilation sustains reactions.",
+        "Provides exact test beds for spacecraft fire safety standards under variable atmospheric pressures and elevated oxygen fractions.",
+        "Combustion research involves developing a comprehensive and predictive quantitative understanding of this complex process."
+      ],
+      "hardware_and_facilities": [
+        "Combustion Integration Rack (CIR) in the Destiny laboratory module.",
+        "Fluids and Combustion Facility (FCF).",
+        "High-speed color cameras, UV/IR radiometers, and digital multi-wavelength soot emission pyrometry."
+      ],
+      "safety_and_containment_protocols": [
+        "Dual-barrier or triple-barrier containment is mandatory for all open-flame payloads inside the ISS cabin.",
+        "Emergency depressurization, inert gas flooding, and catalyst scrubbing prevent toxic gas release into crew quarters."
+      ],
+      "scope": "Provides an overview of combustion science research, including past research, lessons learned, opportunities for future research and introductory information on funding opportunities.",
+      "page_editor": "Ana Guzman",
+      "page_last_updated": "May 23, 2024",
+      "related_corpus_chunk_ids": [
+        "guide-reduced-gravity",
+        "guide-iss-fire-safety"
+      ]
+    },
+    {
+      "source_id": "nasa-sma-apollo-1",
+      "url": "https://sma.nasa.gov/sma-disciplines/accllp/apollo-1",
+      "title": "Apollo 1 (AS-204) — Accident Investigation & Lessons Learned",
+      "facility": "NASA Safety Center / Apollo 204 Review Board / Launch Complex 34, Cape Kennedy",
+      "category": "historical_incident",
+      "primary_discipline": "Historical Spacecraft Fire Incident & High-Pressure Oxygen Hazards",
+      "target_environments": ["iss", "lunar_base", "mars_rover"],
+      "mission_designation": "AS-204 (officially); later known as Apollo 1",
+      "spacecraft": "Command Module (CM) 012",
+      "construction_start": "August 1964, Downey, California",
+      "construction_company": "North American Aviation, Downey, California",
+      "planned_launch_date": "February 21, 1967",
+      "mission_duration_planned": "Up to 14 days (open-ended Earth orbital flight)",
+      "planned_experiments": "Nine experiments: five medical, three scientific, one technological",
+      "planned_additional_activities": "One television broadcast — which would have been the first beamed down from an American-crewed spacecraft in orbit",
+      "planned_splashdown": "Atlantic Ocean after 330 hours and 50 minutes (would have broken Gemini VII's record)",
+      "crew": [
+        {
+          "name": "Virgil 'Gus' Grissom",
+          "role": "Commander",
+          "experience": "Mercury 4 and Gemini 3 veteran"
+        },
+        {
+          "name": "Edward White",
+          "role": "Senior Pilot",
+          "experience": "Gemini IV veteran and the first American to conduct a spacewalk"
+        },
+        {
+          "name": "Roger Chaffee",
+          "role": "Pilot",
+          "experience": "Spaceflight rookie"
+        }
+      ],
+      "crew_announcement_date": "March 21, 1966 (press conference)",
+      "training_location": "Manned Spacecraft Center (now Johnson Space Center) and Kennedy Space Center; also extensively at North American Aviation during spacecraft construction",
+      "spacecraft_arrival_ksc": "August 26, 1966",
+      "altitude_chamber_tests_completed": "Late December 1966",
+      "transfer_to_launch_pad_34": "January 3, 1967",
+      "incident_date": "January 27, 1967",
+      "incident_type": "Flash fire during 'plugs-out' countdown rehearsal — spacecraft switching from external to internal power",
+      "cabin_conditions_at_time_of_fire": "100% oxygen atmosphere, hatches closed, crew wearing spacesuits",
+      "incident_sequence": [
+        "Spacecraft scheduled to switch to its own internal power ('plugs-out' test).",
+        "Astronauts wearing spacesuits with spacecraft hatches closed, cabin pressurized with 100% oxygen.",
+        "A flash fire swept through the spacecraft.",
+        "Within seconds, rising temperatures and pressure caused the CM pressure vessel to crack, releasing flames and smoke onto the launch pad's service structure.",
+        "The astronauts attempted to open the inner hatch while the pad crew tried to open the two outer hatches.",
+        "By the time the pad crew was able to open the hatches, the crew had already perished."
+      ],
+      "cause_of_death": "Asphyxia from carbon monoxide and other toxic gases resulting from the fire. Their burns were likely survivable. (U.S. Air Force pathologists conclusion)",
+      "investigation": {
+        "board_name": "Apollo 204 Review Board",
+        "established_date": "January 28, 1967",
+        "established_by": "Deputy NASA Administrator Robert C. Seamans",
+        "first_meeting": "January 28, 1967 (board visited the scene of the accident)",
+        "investigation_panels": 21,
+        "report_release_date": "April 9, 1967",
+        "report_length": "3,000 pages",
+        "congressional_hearings": "Both houses of Congress held hearings to better understand the causes of the accident and NASA's plans to prevent recurrence."
+      },
+      "root_causes_identified": [
+        "100% pure oxygen atmosphere at approximately 16.7 psia (exceeding standard sea-level pressure).",
+        "Evidence of arcing in several wires in the spacecraft near the environment control system — the area that received the most severe fire damage.",
+        "Because of the pure oxygen atmosphere, the fire spread quickly, causing a rapid rise in temperature and pressure that led to the rupture of the Command Module pressure vessel.",
+        "The design of the three-piece hatch took 90 seconds to open under ideal conditions; it was impossible to open under increased pressure.",
+        "Since the test took place with an unfueled rocket, it was considered non-hazardous and not reviewed by appropriate safety organizations — no defined process for rescuing or treating crew existed.",
+        "Both technical and management lapses led to the accident (board conclusion)."
+      ],
+      "engineering_redesigns_and_fixes": [
+        "All subsequent Apollo crews would fly aboard the Block II version of the spacecraft, which included a docking probe and transfer tunnel for internal transfers between CM and Lunar Module.",
+        "Replaced the three-piece hatch with a unified hatch that could be opened from inside or outside the spacecraft in three seconds.",
+        "NASA severely restricted and controlled the amount and location of combustible materials within the spacecraft and made those changes in the Lunar Module as well.",
+        "New spacesuits designed using fire-resistant materials.",
+        "Creation of NASA-STD-6001 (Flammability, Odor, Offgassing, and Compatibility Requirements and Test Procedures for Materials in Environments that Support Combustion)."
+      ],
+      "post_fire_mission_renaming": {
+        "apollo_1": "Mission originally scheduled for Grissom, White and Chaffee officially named Apollo 1 (spring 1967, by Dr. George E. Mueller, NASA Associate Administrator for Manned Space Flight)",
+        "apollo_4": "First Saturn V launch designated Apollo 4",
+        "apollo_5": "Eventual launch of AS-204 became Apollo 5",
+        "apollo_2_3": "No missions or flights were ever designated Apollo 2 or Apollo 3."
+      },
+      "emergency_playbook_rules": [
+        "Treat oxygen-enriched fire conditions as an immediate escalation requiring emergency response.",
+        "Keep an operable rapid-egress route and verify it is unobstructed during every emergency drill.",
+        "All materials inside pressurized spacecraft cabins must be strictly controlled for flammability.",
+        "Any test involving a crewed spacecraft must have a defined rescue and emergency treatment process regardless of fuel/hazard status.",
+        "Hatch design must permit rapid egress under all pressure conditions — a hatch requiring 90+ seconds is unacceptable.",
+        "Classify no test as 'non-hazardous' when crew members are aboard — always assign safety oversight."
+      ],
+      "memorials": [
+        "Ad Astra Per Aspera — Kennedy Space Center Visitor Complex, Merritt Island, Florida",
+        "Launch Complex 34 Memorial — Kennedy Space Center",
+        "Apollo I Monument — Arlington National Cemetery, Arlington, Virginia",
+        "Space Mirror Museum — Kennedy Space Center Visitor Complex"
+      ],
+      "related_corpus_chunk_ids": [
+        "incident-apollo-1",
+        "incident-apollo-1-lessons"
+      ]
+    },
+    {
+      "source_id": "nasa-sma-apollo-13",
+      "url": "https://sma.nasa.gov/sma-disciplines/accllp/apollo-13",
+      "title": "Apollo 13 (CSM-109 / LM-7) — Oxygen Tank Explosion Accident Investigation",
+      "facility": "NASA Safety Center / Apollo 13 Review Board (Edgar Cortright) / Launch Pad 39A",
+      "category": "historical_incident",
+      "primary_discipline": "Supercritical Cryogenic Oxygen Storage & Electrical Isolation",
+      "target_environments": ["iss", "lunar_base", "mars_rover"],
+      "spacecraft": "Command/Service Module CSM-109 (CM Odyssey) + Lunar Module LM-7 (Aquarius)",
+      "planned_landing_site": "Fra Mauro region of the Moon (more rugged than former landing sites, extensive geologic area around Mare Imbrium — largest lava plain on the Moon)",
+      "mission_duration_planned": "10-day lunar mission",
+      "planned_activities": "Lovell and Haise planned two four-hour spacewalks to set up the Lunar Surface Experiment Package (a series of five investigations). Mattingly would remain in CM for geologic observations from lunar orbit and photograph potential landing sites.",
+      "crew": [
+        {
+          "name": "James A. Lovell Jr.",
+          "role": "Commander (CDR)"
+        },
+        {
+          "name": "Fred W. Haise Jr.",
+          "role": "Lunar Module Pilot (LMP)"
+        },
+        {
+          "name": "John L. 'Jack' Swigert Jr.",
+          "role": "Command Module Pilot (CMP) — replaced Ken Mattingly"
+        }
+      ],
+      "original_cmp": "Thomas 'Ken' Mattingly — replaced by Swigert days before the mission because Charles Duke accidentally exposed the crew to German measles and Mattingly lacked immunity",
+      "backup_crew": "John 'Jack' Swigert and Charles Duke",
+      "problems_before_launch": [
+        "Measles scare led to replacement of Ken Mattingly with Swigert.",
+        "Ground tests before launch indicated possibility of a poorly insulated helium tank in the Lunar Module.",
+        "Previously damaged oxygen tank number two identified during ground tests."
+      ],
+      "saturn_v_anomaly_at_launch": "5.5 minutes after liftoff, center engine of the S-II (second stage) shut down two minutes early, causing remaining four engines to burn 34 seconds longer than planned, and the S-IVB third stage to burn nine seconds longer to put Apollo 13 in orbit.",
+      "tv_broadcast_before_explosion": "49-minute TV broadcast showing conditions on board the spacecraft, completed shortly before the explosion",
+      "incident_sequence": [
+        "Third day of mission: oxygen tank number two blew up.",
+        "About one to two seconds after the bang heard by crew, warning lights indicated loss of two of the three fuel cells.",
+        "Swigert communicated to Mission Control: 'Houston, we've had a problem.'",
+        "About 14 minutes after the incident began, Lovell looked outside and saw they were venting oxygen into space.",
+        "Explosion in tank number two also damaged tank number one, making fuel cells impossible to use.",
+        "With only 15 minutes of power left in the Command Module, mission control pronounced the CM 'mortally wounded.'",
+        "Crew entered 'lifeboat' mode and escaped to the Lunar Module Aquarius (which had full oxygen tank and descent engine).",
+        "Flight Director Eugene Kranz laid out the new mission: abandon Moon landing, loop around the Moon, get crew home as quickly as possible.",
+        "Ground control computed a 35-second burn and fired it five hours after the explosion.",
+        "As spacecraft approached the Moon, computed a longer 5-minute burn two hours after rounding far side of the Moon."
+      ],
+      "lioh_canister_problem": "Square lithium hydroxide canisters from the Command Module spacecraft were not compatible with the round openings in the Lunar Module. Support staff in Houston had to devise a method of making the canisters work.",
+      "water_conservation": "Crew cut down to six ounces of water each per day — 1/5 of their normal intake. Estimated they would run out about five hours before Earth re-entry.",
+      "temperature_conditions": "To preserve electricity, electrical systems were turned off; spacecraft lost an important source of heat, dropping to 38 degrees Fahrenheit. Condensation formed on the walls.",
+      "cm_powerup_challenge": "Mission control had three days to devise procedures for powering up the CM after a long hiatus — a process that would normally take three months. Primary concern was whether cold condensation on instrumentation would cause a short circuit when power returned.",
+      "apollo_1_connection": "A lesson learned from the Apollo I fire prevented arcing from happening during reentry, as a major redesign added increased insulation to better protect the wiring.",
+      "splashdown": "April 17, 1970; four hours before landing the crew shed the Service Module; three hours later left the Lunar Module; splashed down in the Pacific Ocean.",
+      "root_cause_investigation": {
+        "board_chair": "Edgar M. Cortright",
+        "report_release_date": "June 15, 1970",
+        "findings_hearing_date": "June 16, 1970 (before House Committee on Science and Aeronautics)",
+        "investigation_duration": "Seven weeks with four panels",
+        "conclusion": "The accident was a combination of mistakes and a deficient design."
+      },
+      "root_causes_identified": [
+        "In 1965, Command Module underwent improvements including raising permissible voltage to heaters in oxygen tanks from 28 to 65 volts DC.",
+        "The thermostatic switches on the heaters were NOT modified to suit this voltage change.",
+        "During the final test on the launch pad, heaters were left on for an extended period and reached temperatures around 1,000 degrees Fahrenheit, degrading the Teflon insulation.",
+        "The tank, damaged from eight hours of overheating, was left vulnerable the next time it was filled with oxygen.",
+        "When crew activated tank destratification stirring fans, an electrical arc ignited the exposed Teflon insulation in the high-pressure pure oxygen environment.",
+        "Rapid pressure surge blew the tank dome, causing structural blowout of Service Module Sector 4 outer panel and loss of Oxygen Tank No. 1."
+      ],
+      "engineering_redesigns_and_fixes": [
+        "For Apollo 14 and future missions: added a third oxygen tank in a different bay.",
+        "Upgraded thermostats to match the 65V operational voltage.",
+        "Removed stirring fans from cryogenic oxygen tanks.",
+        "Sheathed all electrical wiring in stainless steel.",
+        "Review Board recommended redesign and recertification of the Service Module oxygen storage system.",
+        "Thorough review by NASA of all Apollo systems that use cryogenic oxygen.",
+        "Management and organizational structures strengthened to ensure adequate understanding of engineering and manufacturing processes of subsystems."
+      ],
+      "emergency_playbook_rules": [
+        "Escalate oxygen-system anomalies for independent engineering review before flight.",
+        "Maintain redundant, isolated auxiliary oxygen supply reservoirs.",
+        "Verify voltage compatibility between all ground test equipment and flight hardware before testing.",
+        "When using lifeboat systems, pre-verify consumable compatibility (e.g., LiOH canister form factor) between modules.",
+        "In a lifeboat scenario, immediately calculate and conserve all consumables: power, water, oxygen, CO2 scrubbing.",
+        "Never classify electrical components as safe if their rated voltage has been changed without updating all dependent systems."
+      ],
+      "tributes": [
+        "Apollo 13 Bronze Statue — Space Center Houston, 1601 E NASA Parkway, Houston, TX 77058",
+        "Fred Haise Statue — Biloxi, MS",
+        "Jack Swigert Statue — United States Capital Visitor Center's Emancipation Hall, First St. SE, Washington DC",
+        "Jim Lovell Statue — Adler Planetarium and Astronomy Museum, 1300 S DuSable Lake Shore Dr., Chicago, IL"
+      ],
+      "related_corpus_chunk_ids": [
+        "incident-apollo-13"
+      ]
+    },
+    {
+      "source_id": "nasa-history-mir-fire",
+      "url": "https://www.nasa.gov/history/25-years-ago-fire-aboard-space-station-mir/",
+      "title": "25 Years Ago: Fire Aboard Space Station Mir",
+      "facility": "NASA History Division / Russian Space Agency (Roscosmos) / Mir Space Station, Kvant-1 Module",
+      "category": "historical_incident",
+      "primary_discipline": "Orbital Station Fire Dynamics, Smoke Dispersion & Egress Management",
+      "target_environments": ["iss", "lunar_base", "mars_rover"],
+      "author": "John Uri, Johnson Space Center",
+      "article_date": "Feb 23, 2022",
+      "incident_date": "February 24, 1997 (shortly after dinner)",
+      "incident_location": "Mir space station, Kvant-1 module",
+      "fire_source": "Solid-fuel oxygen generator (SFOG) canister ignited by Aleksandr Lazutkin during routine activation",
+      "executive_summary": "On Feb. 24, 1997, the six crew members aboard the Russian space station Mir faced significant danger when a fire ignited in an oxygen generating system. The searing flame, lasting several minutes, not only cut off access to one of the two Soyuz escape vehicles but also filled the station's modules with smoke. Through teamwork and composure, the crew prevailed and extinguished the flames, with no damage to the station's structure.",
+      "crew_during_incident": [
+        {
+          "name": "Valeri G. Korzun",
+          "agency": "Roscosmos",
+          "mission": "Long-duration, aboard since previous August",
+          "role_in_fire": "Led firefighting effort — doused flame with foam extinguisher"
+        },
+        {
+          "name": "Aleksandr Y. Kaleri",
+          "agency": "Roscosmos",
+          "mission": "Long-duration, aboard since previous August"
+        },
+        {
+          "name": "Jerry M. Linenger",
+          "agency": "NASA",
+          "arrival": "Arrived aboard space shuttle Atlantis in January 1997",
+          "role_in_fire": "Held Korzun in place during firefighting"
+        },
+        {
+          "name": "Vasili V. Tsibliyev",
+          "agency": "Roscosmos",
+          "mission": "Newly-arrived trio",
+          "role_in_fire": "Handed extinguishers to Korzun"
+        },
+        {
+          "name": "Aleksandr I. Lazutkin",
+          "agency": "Roscosmos",
+          "mission": "Newly-arrived trio",
+          "role_in_fire": "Activated the SFOG canister that ignited; handed extinguishers to Korzun"
+        },
+        {
+          "name": "Reinhold Ewald",
+          "agency": "DLR (German space agency)",
+          "mission": "Short-duration visiting flight",
+          "role_in_fire": "Handed extinguishers to Korzun"
+        }
+      ],
+      "crew_overlap_context": "Mir normally housed a resident crew of three, but during handovers between long-duration crews, crew size grew to six for short periods. The handover period was Feb. 12 to March 3, 1997.",
+      "fire_description": "Shortly after dinner on Feb. 24, as Lazutkin activated a solid-fuel oxygen generator in Mir's Kvant-1 module, the canister ignited, shooting a three-foot flame with sparks and bits of molten metal across the module and generating a large quantity of dense smoke.",
+      "egress_blocked": "The flame blocked the evacuation route to the Soyuz spacecraft docked at the aft end of Kvant-1 — the vehicle Korzun, Kaleri, and Ewald would use in an emergency evacuation.",
+      "firefighting_sequence": [
+        "Crew quickly donned oxygen masks.",
+        "Korzun began dousing the flame with foam from a fire extinguisher.",
+        "Linenger held Korzun in place during the effort.",
+        "Tsibliyev, Lazutkin, and Ewald handed Korzun two more extinguishers.",
+        "The flame finally extinguished itself, with Korzun's efforts preventing significant damage.",
+        "Some of Kvant-1's panels were charred but no structural damage occurred.",
+        "Over the next several hours, the station's life support system cleared the smoke.",
+        "Life returned to normal aboard Mir following what is recorded as the worst in-orbit fire incident in the history of spaceflight."
+      ],
+      "normal_oxygen_generation_on_mir": {
+        "primary_system": "Two Elektron oxygen generating units — generated oxygen through electrolytic splitting of water, primarily reclaimed from sources aboard the station",
+        "supplemental_system": "Solid fuel oxygen generators (SFOG), also known as Vika or by the Russian acronym TGK, used when crew exceeded three"
+      },
+      "sfog_details": {
+        "chemical": "Lithium perchlorate canisters",
+        "origin": "Utilized for decades aboard Soviet and Russian submarines, and for years aboard their space stations",
+        "capacity": "Each canister provided enough oxygen to support one crew member per day",
+        "usage_history_before_fire": "Used without incident more than 2,500 times aboard Mir",
+        "post_fire_analysis": "Astronauts returned the damaged generator on the next space shuttle mission for evaluation, but extensive damage made analysis of the fire's cause difficult."
+      },
+      "root_cause": {
+        "investigation_duration": "Two years of study",
+        "finding": "Investigators determined that hydrocarbons introduced into the canister increased the risk of problems.",
+        "most_likely_culprit": "Latex working glove material inadvertently introduced into the canister"
+      },
+      "incident_dynamics_and_threats": [
+        "Canister ignited shooting a three-foot flame with sparks and bits of molten metal across the module.",
+        "Generated a large quantity of dense smoke.",
+        "Fire cut off direct access to one of the two docked Soyuz escape spacecraft, posing an existential risk of trapping three crew members without egress.",
+        "Absence of gravity meant smoke did not rise to the ceiling; it spread uniformly, filling the entire station complex.",
+        "Crew had to don emergency gas masks and oxygen respirator hoods."
+      ],
+      "legacy_for_iss": {
+        "oxygen_systems": "International Space Station has a robust oxygen generation system with dissimilar redundancies: three improved Elektron units in the Russian segment AND the Oxygen Generation System (OGS) in the American segment (both use electrolytic splitting of regenerated water).",
+        "sfog_backup": "An SFOG system, with additional safety measures, is available in the Russian segment as needed when a larger crew is aboard or as a backup to the Elektron.",
+        "training_changes": "Russian space officials instituted changes in how crew members trained for similar emergencies and how ground controllers responded.",
+        "canister_preparation": "Eventual knowledge of the cause enabled implementation of changes in the ground preparation of SFOG canisters."
+      },
+      "emergency_playbook_rules": [
+        "Don respiratory protection immediately when smoke is detected — do not delay.",
+        "Confirm all evacuation paths remain physically clear BEFORE igniting or activating any chemical oxygen generator.",
+        "Isolate and assess oxygen-generator hazards; chemical O2 generators (lithium perchlorate) carry inherent contamination risk.",
+        "Have multiple fire extinguishers pre-positioned near oxygen generation equipment.",
+        "In microgravity, smoke disperses uniformly in all directions — entire module must be treated as contaminated, not just upper zones.",
+        "During crew handover periods, brief all crew members on emergency procedures before increasing crew size."
+      ],
+      "page_editor": "Alison Hall",
+      "page_last_updated": "Sep 11, 2023",
+      "related_corpus_chunk_ids": [
+        "incident-mir-fire"
+      ]
+    },
+    {
+      "source_id": "nasa-spinoff-scott-aviation",
+      "url": "https://spinoff.nasa.gov/node/9582",
+      "title": "Fireman's Air Tanks — NASA Spinoff",
+      "spinoff_title_original": "Fireman's Air Tanks",
+      "facility": "NASA Johnson Space Center (JSC) & A-T-O Inc.'s Scott Aviation",
+      "category": "earth_spinoff",
+      "primary_discipline": "Composite Pressure Vessels & Respiratory Protection Spinoff",
+      "published_year": "1976",
+      "target_environments": ["earth"],
+      "publication_reference": "http://hdl.handle.net/hdl:2060/20030005480",
+      "executive_summary": "Together with NASA's Johnson Space Center, A-T-O Inc.'s Scott Aviation developed light-weight firefighter's air tanks. The new backpack system weighs only 20 pounds for a 30-minute air supply — 13 pounds less than conventional firefighting tanks.",
+      "specifications": {
+        "weight": "20 pounds for 30-minute air supply",
+        "weight_reduction": "13 pounds less than conventional firefighting tanks (previous tanks weighed approximately 33 pounds)",
+        "pressure": "4,500 psi — twice current tanks at time of publication",
+        "construction": "Aluminum liner wrapped by resin-impregnated glass fibers",
+        "corrosion": "Eliminates corrosion as well as lightening the load"
+      },
+      "technological_innovations": [
+        "Development of aluminum-lined fiberglass filament-wound composite pressure cylinders pressurized at 4,500 psi (twice current tanks).",
+        "Reduced breathing apparatus pack weight from approximately 33 pounds down to 20 pounds for a standard 30-minute air supply — a ~40% weight reduction.",
+        "Made of aluminum liner wrapped by resin-impregnated glass fibers, eliminating corrosion as well as lightening the load.",
+        "Redesigned face mask permits better vision.",
+        "Warning device to tell fireman he is running out of air is personalized so it cannot be heard by others, reducing confusion in an already hectic environment."
+      ],
+      "partner_organizations": [
+        "NASA Johnson Space Center",
+        "A-T-O Inc.'s Scott Aviation",
+        "Structural Composites Inc.",
+        "The Boeing Co.",
+        "Martin-Marietta Corp."
+      ],
+      "human_performance_impacts": [
+        "Dramatically reduced firefighter physical fatigue, cardiac strain, and core body heat stress.",
+        "Enhanced agility and balance when navigating collapsed structures, burning stairwells, and tight spaces.",
+        "Personalized warning device reduces confusion in hectic environments.",
+        "Standardized across North American and global fire services as the modern Self-Contained Breathing Apparatus (SCBA)."
+      ],
+      "related_corpus_chunk_ids": [
+        "spinoff-fire-air-tanks"
+      ]
+    },
+    {
+      "source_id": "nasa-spinoff-brunswick-detector",
+      "url": "https://spinoff.nasa.gov/node/9407",
+      "title": "Fire Detector — NASA Spinoff",
+      "spinoff_title_original": "Fire Detector",
+      "facility": "NASA Kennedy Space Center / Space Shuttle Orbiter Program & Brunswick Corp.",
+      "category": "earth_spinoff",
+      "primary_discipline": "Aerosol Ionization, Particulate Discrimination & Incipient Fire Warning",
+      "published_year": "1978",
+      "target_environments": ["earth"],
+      "publication_reference": "http://hdl.handle.net/hdl:2060/20070018916",
+      "executive_summary": "The Brunswick Incipient Fire Detector, originally used in space shuttle orbiters, was adapted for terrestrial use. It operates by sampling air to determine the presence of combustion particles, discriminating between combustion particles and extraneous matters such as dust — unlike earlier equipment. This gives an important advantage: it is less susceptible to false alarms.",
+      "origin": "Originally used in space shuttle orbiters",
+      "key_capability": "Senses and signals the presence of a fire condition before appearance of flame and smoke — an advancement over commercially available smoke detectors.",
+      "technological_innovations": [
+        "Sensor operates by sampling air to determine the presence of combustion particles.",
+        "Unlike earlier equipment, the Brunswick Incipient Fire Detector can discriminate between combustion particles and extraneous matters such as dust.",
+        "Less susceptible to false alarms than conventional detectors.",
+        "For large area applications such as mines, any number of sensors can be linked to a central processor/display unit to provide a central fire watch system that would instantly warn of incipient fire and pinpoint the location.",
+        "Represents an advancement over commercially available smoke detectors in that it senses and signals the presence of a fire condition before appearance of flame and smoke.",
+        "Continuous air sampling ionization chamber capable of detecting sub-micron pre-combustion particulate aerosols."
+      ],
+      "large_area_capability": "Any number of sensors can be linked to a central processor/display unit to provide a central fire watch system that would instantly warn of incipient fire and pinpoint the location — suitable for mines and large facilities.",
+      "advantage_over_smoke_detectors": "Detects fire condition before appearance of flame AND smoke — earlier warning than conventional smoke detectors.",
+      "terrestrial_applications": [
+        "Mines (explicitly mentioned in source — central processor can link any number of sensors to pinpoint fire location).",
+        "Critical telecommunications switching centers and central offices.",
+        "Semiconductor fabrication cleanrooms and computer server data centers.",
+        "Museums, historical archives, and hospital surgical suites where conventional water sprinkler false triggers cause catastrophic damage."
+      ],
+      "related_corpus_chunk_ids": [
+        "spinoff-fire-detector"
+      ]
+    },
+    {
+      "source_id": "nasa-spinoff-project-fires",
+      "url": "https://spinoff.nasa.gov/node/9918",
+      "title": "New Technology for the Fire Attire — NASA Spinoff",
+      "spinoff_title_original": "New Technology for the Fire Attire",
+      "project_name": "Project FIRES (Firefighter's Integrated Response Equipment System)",
+      "facility": "NASA Johnson Space Center / Marshall Space Flight Center (technical management) / FEMA U.S. Fire Administration",
+      "category": "earth_spinoff",
+      "primary_discipline": "High-Performance Polymers, Thermal Protective Barriers & Garment Ergonomics",
+      "published_year": "1982",
+      "target_environments": ["earth"],
+      "publication_reference": "http://hdl.handle.net/hdl:2060/20030002834",
+      "sponsors": [
+        "NASA",
+        "Federal Emergency Management Agency's U.S. Fire Administration"
+      ],
+      "technical_management": "Marshall Space Flight Center",
+      "executive_summary": "Project FIRES involves applications of advanced materials and design concepts, derived from Apollo, to update existing firefighting gear which does not adequately protect against many of the hazards encountered in fire suppression activities. A major focus involves application of lightweight, fire-resistant, heat-protective materials originally developed for use in astronauts' space suits or in spacecraft components requiring thermal protection.",
+      "field_evaluation": {
+        "participants": "Fourteen municipal fire departments",
+        "purpose": "Data from the fourteen municipal fire departments participating in the field evaluation will form a basis for development of new nationwide protective ensemble standards."
+      },
+      "material_origins": "Lightweight, fire-resistant, heat-protective materials originally developed for use in astronauts' space suits or in spacecraft components which require thermal protection — derived from Apollo program.",
+      "goal": "Although little can be done to reduce the risks of firefighting, something can be done to curb the injuries and fatalities.",
+      "technological_innovations": [
+        "Applications of advanced materials and design concepts derived from Apollo program.",
+        "Lightweight, fire-resistant, heat-protective materials originally developed for astronauts' space suits.",
+        "Multi-layered garment architecture: Outer shell resistant to abrasion and direct flame contact; moisture barrier preventing water/chemical penetration; thermal barrier insulating against flashover heat.",
+        "Incorporation of polybenzimidazole (PBI) and aramid polymers (Nomex/Kevlar) originally developed for Apollo and Space Shuttle suits.",
+        "Redesign of firefighter helmets using impact-resistant polycarbonate resin shells and face shields withstanding radiant thermal fluxes exceeding 500°F (260°C).",
+        "Engineered wristlets, boots, and gloves with specialized vapor barriers preventing steam burns."
+      ],
+      "human_performance_impacts": [
+        "Goal: curb the injuries and fatalities of firefighting.",
+        "Breathable semi-permeable membrane allowing metabolic heat and sweat vapor to escape, mitigating dangerous heat stroke.",
+        "Nationwide protective ensemble standards development based on 14 municipal fire department field data."
+      ],
+      "related_corpus_chunk_ids": [
+        "spinoff-fire-attire"
+      ]
+    }
+  ]
+}

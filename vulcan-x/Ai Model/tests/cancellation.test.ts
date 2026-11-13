@@ -33,3 +33,17 @@ test('AI controller never returns private upstream exception details', async () 
   expect(response.status).toBe(500);
   expect(await response.text()).not.toContain('private-provider');
 });
+
+test('merged Knowledge generation propagates caller cancellation instead of returning fallback success', async () => {
+  let started!: () => void;
+  const ready = new Promise<void>((resolve) => { started = resolve; });
+  const provider = { generateCompletion: (_prompt: string, _system: string, signal: AbortSignal) => new Promise((_resolve, reject) => {
+    signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+    started();
+  }) } as unknown as AiProviderService;
+  const controller = new AbortController();
+  const pending = new RagService(provider).query({ question: 'NASA oxygen fire microgravity', environment: 'iss' }, controller.signal);
+  await ready;
+  controller.abort(new DOMException('Cancelled', 'AbortError'));
+  await expect(pending).rejects.toThrow('Cancelled');
+});

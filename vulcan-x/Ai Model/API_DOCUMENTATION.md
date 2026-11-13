@@ -54,11 +54,12 @@ The system orchestrates a pool of **5 OpenRouter API keys** with transparent rot
 | `GET` | `/health` | Backend health check, uptime, and timestamp |
 | `GET` | `/test` | Interactive HTML test dashboard with real-time 3D Three.js canvas |
 | `POST` | `/api/v1/ai/query` | AI-powered RAG combustion query with scientific citations |
+| `GET` | `/api/v1/ai/links` | Link Intelligence Catalog & URL Content Explorer (`?q=:keyword`) |
 | `GET` | `/api/v1/ai/key-status` | 5-key failover pool health and diagnostic telemetry |
 | `POST` | `/api/v1/ai/key-reset` | Reset all 5 key slot counters, cooldowns, and statuses |
 | `POST` | `/api/v1/simulator/stress-test` | Habitat combustion stress-test with AI recommendations |
 | `POST` | `/api/v1/simulator/hazard-evaluation` | Planetary 3D canvas trigger parameters & visual physics |
-| `GET` | `/api/v1/datasets` | NASA PSI research catalog (8 investigations) |
+| `GET` | `/api/v1/datasets` | NASA PSI research catalog (12 source-bound chunks) |
 
 ---
 
@@ -185,6 +186,62 @@ Executes a Retrieval-Augmented Generation (RAG) pipeline over NASA PSI research 
 curl -X POST http://localhost:4000/api/v1/ai/query \
   -H "Content-Type: application/json" \
   -d '{"question": "What is the cool flame phenomenon in NASA FLEX experiments?", "environment": "iss"}'
+```
+
+---
+
+## 4.1. Link Intelligence & URL Content Explorer
+
+**`GET /api/v1/ai/links`**  
+**`GET /api/v1/ai/links?q=:searchQuery`**
+
+Provides deep, structured insight into every official NASA source link in the knowledge base. It extracts and groups intelligence behind each URL, including key findings, categorized scientific summaries, searchable tags, and related environments.
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `q` | `string` | No | Optional keyword, facility, or mission name (e.g., `apollo`, `glenn`, `oxygen`, `spinoff`, `mir`). |
+
+### Response `200 OK`
+
+```json
+{
+  "success": true,
+  "count": 5,
+  "query": "apollo",
+  "links": [
+    {
+      "url": "https://sma.nasa.gov/sma-disciplines/accllp/apollo-1",
+      "title": "Apollo 1 AS-204",
+      "category": "historical_incident",
+      "summary": "Analysis of the catastrophic 1967 Apollo 1 pad fire caused by a high-pressure 100% oxygen atmosphere and electrical arcing. Critical engineering redesigns following Apollo 1, including rapid-opening hatches and strict combustible material restrictions.",
+      "key_findings": [
+        "Pure oxygen at elevated pressures turns normally fire-resistant materials highly flammable and dramatically accelerates flame propagation.",
+        "Pressure vessel rupture resulted from rapid gas heating and subsequent toxic gas release.",
+        "Internal hatch design prevented the crew from executing an emergency escape in time.",
+        "Replacement of slow multi-piece hatches with an outward-opening quick-release hatch operable in under 3 seconds.",
+        "Atmosphere changed from 100% O2 on the launch pad to a nitrogen-oxygen mix (60/40) during pre-launch operations.",
+        "Institution of stringent NASA-STD-6001 flammability testing for all flight items."
+      ],
+      "keywords": [
+        "Apollo 1", "pure oxygen", "pressure", "fire spread", "escape", "toxic smoke", "capsule rupture", "hatch", "egress", "combustibles", "lessons learned"
+      ],
+      "environments": ["iss", "lunar_base", "mars_rover"],
+      "chunk_ids": ["incident-apollo-1", "incident-apollo-1-lessons"]
+    }
+  ]
+}
+```
+
+### cURL
+
+```bash
+# Retrieve all links with summarized intelligence
+curl http://localhost:4000/api/v1/ai/links
+
+# Search for specific link information
+curl "http://localhost:4000/api/v1/ai/links?q=glenn"
 ```
 
 ---

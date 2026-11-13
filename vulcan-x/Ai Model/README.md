@@ -13,7 +13,7 @@
 
 This service is a private upstream of ASP.NET Core, not a browser API. It binds to loopback by default (`VULCANX_BIND_HOST=127.0.0.1`). Container deployments must select an explicitly private interface/network; do not publish diagnostics, `/test`, key-status, or key-reset through the frontend/backend allowlist.
 
-Knowledge currently composes source-bound corpus excerpts; it does **not** call a provider merely because credentials exist. A successful Knowledge response is not proof of provider inference or scientific validation. Its `sources` currently contain source URLs; the backend's exact-title matcher may correctly retain these as unmatched/unverified raw labels.
+Knowledge uses source-bound corpus excerpts and NASA link intelligence, with optional provider synthesis when configured. Generation has a seven-second cancellation budget and falls back to deterministic source-bound content when unavailable; caller cancellation is propagated rather than returned as success. A successful Knowledge response alone is not proof of provider inference or scientific validation. Its `sources` currently contain source URLs; the backend's exact-title matcher may correctly retain these as unmatched/unverified raw labels.
 
 Provider operations accept caller cancellation without rotating keys on cancellation. Per-key attempts are bounded at 40 seconds and the overall provider operation at 55 seconds; the ASP.NET AI budget defaults to 60 seconds and Next.js to 75 seconds. Hazard explanation requests additionally cancel actual provider work after 8 seconds instead of leaving a losing promise running. No numerical simulation formula or scientific validation claim was added by the Milestone 6 changes.
 

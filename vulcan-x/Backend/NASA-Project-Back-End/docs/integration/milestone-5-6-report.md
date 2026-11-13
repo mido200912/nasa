@@ -1,5 +1,9 @@
 # Milestones 5–6 execution report
 
+### Merge reconciliation with updated main — 13 November 2026
+
+Merged main commit `f826fb6` (NASA link-intelligence expansion and optional grounded provider generation) with the Milestone 5/6 implementation. Preserved both retrieval/link features and cancellation safeguards. The newer Knowledge generation path now receives the caller signal and cancels actual provider work at main's seven-second deadline; client cancellation cannot silently become fallback success. Added one regression case for this merged path. Post-resolution checks: **14 Bun tests / 187 assertions** and **124 frontend unit tests** passed; frontend lint passed. Earlier live evidence below describes the implementation at its execution time: the merged service now supports optional provider synthesis, but genuine provider inference has still not been verified without credentials. Scientific approval/deployment blockers remain unchanged.
+
 ## Current Milestone 6 continuation — 13 November 2026
 
 **Milestone 5 remains complete. Milestone 6 is still INCOMPLETE:** all feasible local engineering/integration work below passed, but no responsible science-team-approved Habitat fixture or authoritative production hosting/execution ceiling was supplied. Provider-backed inference is also unavailable and is not part of the current source-bound Knowledge implementation. No fabricated approval, scientific input, citation, provider response, or live Habitat success is claimed.

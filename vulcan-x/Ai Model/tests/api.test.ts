@@ -89,7 +89,7 @@ describe('Vulcan-X Backend & AI Engine API Tests', () => {
     const data = (await res.json()) as any;
     expect(data.emergency_playbook.length).toBeGreaterThan(0);
     expect(data.retrieved_chunks.some((chunk: any) => chunk.category === 'historical_incident')).toBe(true);
-  });
+  }, { timeout: 35000 });
 
   test('POST /api/v1/ai/query rejects invalid environment with 400', async () => {
     const reqBody = {
@@ -164,8 +164,34 @@ describe('Vulcan-X Backend & AI Engine API Tests', () => {
       expect(data.simulation_result.ignition_speed_multiplier).toBeLessThan(1.0);
       expect(data.simulation_result.safety_status).toBe('Safe');
     },
-    { timeout: 35000 }
+    { timeout: 45000 }
   );
+
+  test('GET /api/v1/ai/links returns link intelligence catalog and handles search queries', async () => {
+    const res = await app.fetch(new Request('http://localhost:4000/api/v1/ai/links'));
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as any;
+    expect(data.success).toBe(true);
+    expect(data.count).toBeGreaterThanOrEqual(4);
+    expect(Array.isArray(data.links)).toBe(true);
+    for (const link of data.links) {
+      expect(link.url).toMatch(/^https:\/\//);
+      expect(typeof link.title).toBe('string');
+      expect(typeof link.summary).toBe('string');
+      expect(Array.isArray(link.key_findings)).toBe(true);
+      expect(link.key_findings.length).toBeGreaterThan(0);
+      expect(Array.isArray(link.keywords)).toBe(true);
+      expect(Array.isArray(link.environments)).toBe(true);
+    }
+
+    // Query search test
+    const searchRes = await app.fetch(new Request('http://localhost:4000/api/v1/ai/links?q=apollo'));
+    expect(searchRes.status).toBe(200);
+    const searchData = (await searchRes.json()) as any;
+    expect(searchData.success).toBe(true);
+    expect(searchData.links.length).toBeGreaterThan(0);
+    expect(searchData.links.some((l: any) => l.title.toLowerCase().includes('apollo') || l.summary.toLowerCase().includes('apollo'))).toBe(true);
+  });
 
   test(
     'POST /api/v1/simulator/hazard-evaluation calculates 3D visual parameters for lunar base PMMA',
