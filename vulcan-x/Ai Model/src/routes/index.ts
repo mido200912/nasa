@@ -20,6 +20,7 @@ export function createMainRouter(
       status: 'operational',
       endpoints: {
         ai_query: 'POST /api/v1/ai/query',
+        ai_links: 'GET /api/v1/ai/links?q=:search',
         key_status: 'GET /api/v1/ai/key-status',
         simulator_stress_test: 'POST /api/v1/simulator/stress-test',
         hazard_evaluation: 'POST /api/v1/simulator/hazard-evaluation',

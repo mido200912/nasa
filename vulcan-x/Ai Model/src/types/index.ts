@@ -46,7 +46,21 @@ export interface RagChunk {
   category: RagCategory;
   keywords: string[];
   environments: EnvironmentType[];
+  summary?: string;
+  key_findings?: string[];
+  related_topics?: string[];
   emergency_playbook?: string[];
+}
+
+export interface LinkIntelligence {
+  url: string;
+  title: string;
+  category: RagCategory;
+  summary: string;
+  key_findings: string[];
+  keywords: string[];
+  environments: EnvironmentType[];
+  chunk_ids: string[];
 }
 
 /** @deprecated Use RagChunk. */

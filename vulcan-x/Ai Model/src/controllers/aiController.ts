@@ -62,6 +62,36 @@ export class AiController {
   };
 
   /**
+   * GET /api/v1/ai/links
+   * Inspect and search links and their contained intelligence, findings, and categories
+   */
+  public getLinkIntelligence = async (c: Context) => {
+    try {
+      const q = c.req.query('q');
+      const results = q ? this.ragService.searchLinks(q) : this.ragService.getLinkIntelligenceCatalog();
+      return c.json(
+        {
+          success: true,
+          count: results.length,
+          query: q || null,
+          links: results,
+        },
+        200
+      );
+    } catch (err: any) {
+      console.error('[AiController] Error retrieving link intelligence:', err);
+      return c.json(
+        {
+          success: false,
+          error: 'An internal error occurred while inspecting links',
+          message: err?.message || 'Unknown error',
+        },
+        500
+      );
+    }
+  };
+
+  /**
    * GET /api/v1/ai/key-status
    * Health and rotation status of the 5-key API pool
    */

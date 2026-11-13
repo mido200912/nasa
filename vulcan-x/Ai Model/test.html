@@ -853,6 +853,32 @@
         </div>
       </div>
     </div>
+
+    <!-- NASA Link Intelligence & Knowledge Explorer -->
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header" style="justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="card-icon">🔗</div>
+          <div>
+            <h2 style="font-size: 18px; margin: 0;">NASA Link Intelligence & Research Explorer</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Direct structured insights, findings, and searchable knowledge behind every official NASA URL</p>
+          </div>
+        </div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-cyan);">GET /api/v1/ai/links</span>
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-top: 16px; margin-bottom: 16px;">
+        <input type="text" id="linkSearchInput" placeholder="Filter NASA links (e.g., Apollo, Glenn, Oxygen, Spinoff, BASS, Mir)..." 
+          style="flex: 1; background: #0f172a; border: 1px solid var(--card-border); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 13px;"
+          onkeyup="if(event.key==='Enter') searchNasaLinks()" />
+        <button onclick="searchNasaLinks()" style="background: var(--accent-cyan); color: #0b1120; border: none; font-weight: 600; padding: 0 20px; border-radius: 8px; cursor: pointer;">Search Links</button>
+        <button onclick="document.getElementById('linkSearchInput').value=''; loadNasaLinks();" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 0 16px; border-radius: 8px; cursor: pointer;">All</button>
+      </div>
+
+      <div id="linksContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px;">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1568,10 +1594,60 @@
       }
     }
 
+    // Load and render NASA Link Intelligence
+    async function loadNasaLinks(query = '') {
+      const container = document.getElementById('linksContainer');
+      if (!container) return;
+      container.innerHTML = '<div style="color: var(--text-muted); padding: 12px;">Loading NASA link intelligence...</div>';
+      try {
+        const url = query ? `${API_BASE}/api/v1/ai/links?q=${encodeURIComponent(query)}` : `${API_BASE}/api/v1/ai/links`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.success || !data.links || data.links.length === 0) {
+          container.innerHTML = '<div style="color: var(--text-muted); padding: 12px;">No matching NASA links found for query.</div>';
+          return;
+        }
+
+        container.innerHTML = data.links.map(link => `
+          <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+              <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); font-weight: 600;">
+                ${link.category}
+              </span>
+              <a href="${link.url}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); font-size: 12px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                Open NASA Link ↗
+              </a>
+            </div>
+            <h4 style="margin: 0; font-size: 15px; color: #f1f5f9;">${link.title}</h4>
+            <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">${link.summary}</p>
+            
+            <div style="background: #162032; border-radius: 8px; padding: 10px; font-size: 12px;">
+              <strong style="color: #cbd5e1; display: block; margin-bottom: 6px;">Key Findings & Data Points:</strong>
+              <ul style="margin: 0; padding-left: 18px; color: #e2e8f0; display: flex; flex-direction: column; gap: 4px;">
+                ${link.key_findings.map(f => `<li>${f}</li>`).join('')}
+              </ul>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto;">
+              ${link.keywords.slice(0, 5).map(k => `<span style="font-size: 11px; background: #1e293b; color: #94a3b8; padding: 2px 6px; border-radius: 4px;">#${k}</span>`).join('')}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<div style="color: #f87171; padding: 12px;">Failed to load links: ${err.message}</div>`;
+      }
+    }
+
+    function searchNasaLinks() {
+      const q = document.getElementById('linkSearchInput').value.trim();
+      loadNasaLinks(q);
+    }
+
     // Initialize on load
     window.onload = () => {
       checkBackendHealth();
       init3DVisualizer();
+      loadNasaLinks();
     };
   </script>
 </body>
