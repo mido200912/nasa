@@ -1,0 +1,1579 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vulcan-X | NASA AI Combustion & Safety Test Bench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Three.js & OrbitControls for 3D Habitat Fire Canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0a0e17;
+      --card-bg: #111827;
+      --card-border: #1f293d;
+      --accent-cyan: #00e5ff;
+      --accent-flame: #ff5722;
+      --accent-warning: #fbbf24;
+      --accent-safe: #10b981;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-subtle: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #151d30, var(--bg-dark) 70%);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 28px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-badge {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-flame), #ff8a00);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 20px rgba(255, 87, 34, 0.4);
+    }
+
+    .title-group h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-group h1 span {
+      background: linear-gradient(90deg, #ff8a00, var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .title-group p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(17, 24, 39, 0.8);
+      border: 1px solid var(--card-border);
+      padding: 8px 16px;
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+
+    .status-indicator.online {
+      background: var(--accent-safe);
+      box-shadow: 0 0 10px var(--accent-safe);
+    }
+
+    .status-indicator.offline {
+      background: var(--accent-flame);
+      box-shadow: 0 0 10px var(--accent-flame);
+    }
+
+    .status-text {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .btn-refresh {
+      background: transparent;
+      border: none;
+      color: var(--accent-cyan);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-refresh:hover {
+      opacity: 0.8;
+    }
+
+    /* Key Pool Visualizer */
+    .pool-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+
+    .pool-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .pool-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .key-slot {
+      background: #162032;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      transition: all 0.2s;
+    }
+
+    .key-slot.active {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+    }
+
+    .key-slot-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .key-number {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .key-status-pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .pill-active { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .pill-standby { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+    .pill-ratelimited { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .pill-error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    .key-masked {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-subtle);
+    }
+
+    .key-metrics {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Grid Layout for Testing */
+    .test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .test-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 14px;
+    }
+
+    .card-icon {
+      font-size: 22px;
+    }
+
+    .card-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .card-header span {
+      font-size: 12px;
+      color: var(--accent-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      margin-left: auto;
+      background: rgba(0, 229, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Form inputs */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    select, input, textarea {
+      background: #162032;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 85px;
+    }
+
+    .presets-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preset-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      background: var(--accent-cyan);
+      color: #0a0e17;
+      border-color: var(--accent-cyan);
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .range-row input[type="range"] {
+      flex: 1;
+      padding: 0;
+      accent-color: var(--accent-flame);
+    }
+
+    .range-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      min-width: 55px;
+      text-align: right;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, var(--accent-flame), #ff7a00);
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(255, 87, 34, 0.3);
+    }
+
+    .btn-submit:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Result boxes */
+    .result-box {
+      background: #0d131f;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .result-box.visible {
+      display: flex;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .risk-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .risk-low { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .risk-medium { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+    .risk-high { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+
+    .answer-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+    }
+
+    .sources-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .source-tag {
+      background: #1e293b;
+      color: var(--accent-cyan);
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
+
+    /* Simulation metrics display */
+    .sim-stat-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #162032;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .sim-multiplier {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent-flame);
+    }
+
+    .sim-stat-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sim-stat-info span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .sim-recommendation {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #cbd5e1;
+      border-left: 3px solid var(--accent-cyan);
+      padding-left: 10px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 3D Canvas Visualizer Section */
+    .canvas-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .canvas-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 14px;
+    }
+
+    .canvas-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .canvas-title-group h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .canvas-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .canvas-viewport {
+      width: 100%;
+      height: 480px;
+      background: radial-gradient(circle at 50% 50%, #0d1627 0%, #050811 100%);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid #1e293b;
+    }
+
+    .canvas-hud {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .hud-pill {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #94a3b8;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .hud-pill strong {
+      color: var(--accent-cyan);
+    }
+
+    .canvas-controls {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .canvas-btn {
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      transition: all 0.2s;
+    }
+
+    .canvas-btn:hover {
+      background: var(--accent-cyan);
+      color: #0a0e17;
+      border-color: var(--accent-cyan);
+    }
+
+    .warning-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border: 3px solid transparent;
+      border-radius: 12px;
+      transition: border-color 0.3s;
+      z-index: 5;
+    }
+
+    .warning-overlay.flashing {
+      animation: alertPulse 1.1s infinite alternate;
+    }
+
+    @keyframes alertPulse {
+      0% {
+        border-color: rgba(239, 68, 68, 0.15);
+        box-shadow: inset 0 0 25px rgba(239, 68, 68, 0.08);
+      }
+      100% {
+        border-color: rgba(239, 68, 68, 0.95);
+        box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.45);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-area">
+        <div class="logo-badge">🔥</div>
+        <div class="title-group">
+          <h1>VULCAN-X <span>NASA Combustion AI</span></h1>
+          <p>2026 Space Apps Challenge: "Flame in Freefall" • OpenRouter 5-Key Failover Engine</p>
+        </div>
+      </div>
+      <div class="status-bar">
+        <div class="status-indicator" id="statusDot"></div>
+        <span class="status-text" id="statusText">Checking Backend...</span>
+        <button class="btn-refresh" onclick="checkBackendHealth()">🔄 Refresh</button>
+      </div>
+    </header>
+
+    <!-- Key Rotation Pool Diagnostics -->
+    <div class="pool-card">
+      <div class="pool-header">
+        <div class="pool-title">
+          <span>🔑 5 OpenRouter API Key Failover Pool</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="activeKeyBanner" style="font-size: 12px; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace;">
+            Loading pool status...
+          </span>
+          <button onclick="resetKeyPool()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.3)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">🔄 Reset Keys</button>
+        </div>
+      </div>
+      <div class="pool-grid" id="keyPoolGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="test-grid">
+      <!-- Section 1: AI Knowledge & RAG Query -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🧠</div>
+          <h2>Knowledge & RAG Query</h2>
+          <span>POST /api/v1/ai/query</span>
+        </div>
+
+        <div class="form-group">
+          <label>Environment Context</label>
+          <select id="queryEnv">
+            <option value="lunar_base">🌙 Lunar Base (30-34% O2, 8.2-10.2 psi)</option>
+            <option value="iss">🛰️ International Space Station (ISS 0g)</option>
+            <option value="mars_rover">🪐 Mars Rover / Surface Habitat (0.38g)</option>
+            <option value="earth">🌍 Earth Dual-Use (Firefighter Telemetry)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Quick Presets</label>
+          <div class="presets-row">
+            <button class="preset-btn" onclick="setPreset('How does 34% oxygen at 8.2 psi accelerate PMMA solid fuel flame spread in a lunar habitat?', 'lunar_base')">Lunar 34% O2 Flame</button>
+            <button class="preset-btn" onclick="setPreset('Why does forced ventilation between 0.05 m/s and 0.2 m/s sustain flames in microgravity according to NASA BASS?', 'iss')">BASS Ventilation</button>
+            <button class="preset-btn" onclick="setPreset('What is the cool flame phenomenon discovered in NASA FLEX experiments and how to suppress it?', 'iss')">FLEX Cool Flame</button>
+            <button class="preset-btn" onclick="setPreset('How can microgravity optical particle sensors be adapted for municipal firefighter helmets on Earth?', 'earth')">Earth Spinoff</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Research Question</label>
+          <textarea id="queryText" placeholder="Enter your combustion or fire safety question..."></textarea>
+        </div>
+
+        <button class="btn-submit" id="btnQuery" onclick="runAiQuery()">
+          <span>Run RAG Analysis</span>
+        </button>
+
+        <!-- Result Box -->
+        <div class="result-box" id="queryResultBox">
+          <div class="result-header">
+            <span>NASA PSI Analysis</span>
+            <span class="risk-badge" id="riskBadge">Low</span>
+          </div>
+          <div class="answer-text" id="answerText"></div>
+          <div>
+            <label style="font-size: 11px; text-transform: uppercase;">Scientific Sources & Citations:</label>
+            <div class="sources-list" id="sourcesList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Simulator Stress Test -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">⚡</div>
+          <h2>Habitat Stress-Test Simulator</h2>
+          <span>POST /api/v1/simulator/stress-test</span>
+        </div>
+
+        <div class="form-group">
+          <label>Target Habitat</label>
+          <select id="simHabitat">
+            <option value="lunar">🌙 Lunar Base (0.166g - High spread risk)</option>
+            <option value="iss">🛰️ ISS Module (Microgravity 0g)</option>
+            <option value="mars">🪐 Mars Rover Cabin (0.38g)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Oxygen Concentration (%)</label>
+          <div class="range-row">
+            <input type="range" id="simO2Range" min="15" max="45" step="0.5" value="30" oninput="document.getElementById('simO2Val').innerText = this.value + '%'">
+            <span class="range-val" id="simO2Val">30.0%</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Cabin Pressure (psi)</label>
+          <div class="range-row">
+            <input type="range" id="simPressureRange" min="5" max="15" step="0.1" value="10.2" oninput="document.getElementById('simPressureVal').innerText = this.value + ' psi'">
+            <span class="range-val" id="simPressureVal">10.2 psi</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Material Type</label>
+          <div class="presets-row" style="margin-bottom: 6px;">
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'PMMA Acrylic'">PMMA Acrylic</button>
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'Cotton Cellulose'">Cotton</button>
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'Nomex Aramid'">Nomex</button>
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'Kapton Polyimide'">Kapton</button>
+            <button class="preset-btn" onclick="document.getElementById('simMaterial').value = 'PTFE Teflon'">Teflon</button>
+          </div>
+          <input type="text" id="simMaterial" value="PMMA Acrylic" placeholder="e.g. PMMA Acrylic, Nomex, Kapton">
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-submit" id="btnSim" onclick="runSimulation()" style="flex: 1; background: linear-gradient(135deg, #0284c7, var(--accent-cyan));">
+            <span>Execute Simulation</span>
+          </button>
+          <button class="btn-submit" id="btn3DHazard" onclick="run3DHazardEvaluation()" style="flex: 1; background: linear-gradient(135deg, #ff5722, #ec4899);">
+            <span>🪐 3D Engine Hazard</span>
+          </button>
+        </div>
+
+        <!-- 3D Hazard Result Box -->
+        <div class="result-box" id="hazard3DResultBox" style="border-color: rgba(255, 87, 34, 0.4); background: #0c1322;">
+          <div class="result-header">
+            <span style="color: var(--accent-cyan); font-weight: 700;">🪐 3D Canvas Trigger Parameters</span>
+            <span class="risk-badge" id="h3dSafetyBadge">NOMINAL</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
+            <div style="background: #141c2e; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <span style="font-size: 11px; color: var(--text-muted); display: block;">Hazard Score</span>
+              <strong id="h3dScore" style="font-size: 18px; color: #ff5722; font-family: 'JetBrains Mono', monospace;">0.0%</strong>
+            </div>
+            <div style="background: #141c2e; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <span style="font-size: 11px; color: var(--text-muted); display: block;">Spread Velocity</span>
+              <strong id="h3dVelocity" style="font-size: 18px; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace;">0.0 mm/s</strong>
+            </div>
+            <div style="background: #141c2e; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <span style="font-size: 11px; color: var(--text-muted); display: block;">Flame Geometry</span>
+              <strong id="h3dGeometry" style="font-size: 12px; color: #fbbf24; font-family: 'JetBrains Mono', monospace;">spherical</strong>
+            </div>
+            <div style="background: #141c2e; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <span style="font-size: 11px; color: var(--text-muted); display: block;">Particle Density</span>
+              <strong id="h3dParticles" style="font-size: 18px; color: #a78bfa; font-family: 'JetBrains Mono', monospace;">1200</strong>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; display: flex; align-items: center; gap: 8px; background: #162032; padding: 8px 12px; border-radius: 6px;">
+            <span>Render Color: <strong id="h3dColorCode" style="font-family: 'JetBrains Mono';">#FF3333</strong></span>
+            <span id="h3dColorPreview" style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #FF3333;"></span>
+            <span style="margin-left: auto;">Warning Flash: <strong id="h3dFlashUI" style="color: #f87171;">TRUE</strong></span>
+          </div>
+
+          <div style="font-size: 13px; line-height: 1.5; color: #e2e8f0; border-left: 3px solid #ff5722; padding-left: 10px;" id="h3dExplanation"></div>
+        </div>
+
+        <!-- Result Box -->
+        <div class="result-box" id="simResultBox">
+          <div class="result-header">
+            <span>Simulation Assessment</span>
+            <span class="risk-badge" id="simSafetyBadge">Safe</span>
+          </div>
+          <div class="sim-stat-box">
+            <div class="sim-multiplier" id="simMultiplier">1.0x</div>
+            <div class="sim-stat-info">
+              <strong style="font-size: 14px;">Ignition Multiplier</strong>
+              <span>Relative to Earth 1g sea-level air</span>
+            </div>
+          </div>
+          <div class="sim-recommendation" id="simRecommendation"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D Flame & Space Habitat Simulator Canvas -->
+    <div class="canvas-card">
+      <div class="canvas-header">
+        <div class="canvas-title-group">
+          <div class="card-icon" style="font-size: 24px;">🪐</div>
+          <div>
+            <h2>3D Microgravity & Habitat Combustion Visualizer</h2>
+            <p style="font-size: 12px; color: var(--text-muted);">Real-time WebGL canvas driven by PhysicsEngineService & NASA PSI parameters</p>
+          </div>
+        </div>
+        <div class="canvas-badges">
+          <span class="hud-pill">Habitat: <strong id="hudHabitat">Lunar Base (0.166g)</strong></span>
+          <span class="hud-pill">Geometry: <strong id="hudGeometry">spherical_blue_core</strong></span>
+          <span class="hud-pill">Velocity: <strong id="hudVelocity">19.7 mm/s</strong></span>
+          <span class="hud-pill">Status: <strong id="hudStatus" style="color: #f87171;">CRITICAL_HAZARD</strong></span>
+        </div>
+      </div>
+
+      <div class="canvas-viewport" id="viewport3D">
+        <div class="warning-overlay flashing" id="canvasWarningOverlay"></div>
+        <div class="canvas-hud">
+          <div class="hud-pill">NASA-STD-6001 Test Chamber: <strong>ACTIVE</strong></div>
+          <div class="hud-pill">Particles: <strong id="hudParticles">1623</strong></div>
+          <div class="hud-pill">Camera: <strong>Click & Drag to Orbit • Scroll to Zoom</strong></div>
+        </div>
+
+        <div class="canvas-controls">
+          <button class="canvas-btn" onclick="toggleAutoRotate()">🔄 Auto Rotate</button>
+          <button class="canvas-btn" onclick="resetCamera3D()">🎥 Reset View</button>
+          <button class="canvas-btn" onclick="toggleWireframe()">🌐 Wireframe</button>
+          <button class="canvas-btn" onclick="toggleFlameIgnition()">🔥 Re-Ignite</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:4000';
+
+    // Preset helper
+    function setPreset(question, env) {
+      document.getElementById('queryText').value = question;
+      document.getElementById('queryEnv').value = env;
+    }
+
+    // Check backend health & fetch key pool
+    async function checkBackendHealth() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        if (res.ok) {
+          const data = await res.json();
+          dot.className = 'status-indicator online';
+          text.innerText = `Connected (${API_BASE})`;
+          await fetchKeyPoolStatus();
+        } else {
+          throw new Error('HTTP ' + res.status);
+        }
+      } catch (err) {
+        dot.className = 'status-indicator offline';
+        text.innerText = `Backend Offline (${err.message})`;
+      }
+    }
+
+    // Fetch 5-Key pool diagnostics
+    async function fetchKeyPoolStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/ai/key-status`);
+        const data = await res.json();
+        if (data.success && data.keys) {
+          document.getElementById('activeKeyBanner').innerText = `Active Key: Slot #${data.activeKeyIndex} (OpenRouter)`;
+          const grid = document.getElementById('keyPoolGrid');
+          grid.innerHTML = data.keys.map(k => `
+            <div class="key-slot ${k.index === data.activeKeyIndex ? 'active' : ''}">
+              <div class="key-slot-top">
+                <span class="key-number">Slot #${k.index}</span>
+                <span class="key-status-pill pill-${k.status.toLowerCase()}">${k.status}</span>
+              </div>
+              <div class="key-masked">${k.maskedKey}</div>
+              <div class="key-metrics">
+                <span>Success: <strong style="color:#34d399">${k.successCount}</strong></span>
+                <span>Fails: <strong style="color:#f87171">${k.failCount}</strong></span>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load key status:', err);
+      }
+    }
+
+    // Run AI Query
+    async function runAiQuery() {
+      const question = document.getElementById('queryText').value.trim();
+      const environment = document.getElementById('queryEnv').value;
+      const btn = document.getElementById('btnQuery');
+      const box = document.getElementById('queryResultBox');
+
+      if (!question) {
+        alert('Please enter a research question or click a preset!');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Querying OpenRouter...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/ai/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, environment })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          box.classList.add('visible');
+          document.getElementById('answerText').innerText = data.answer;
+          
+          // Risk level badge
+          const badge = document.getElementById('riskBadge');
+          badge.innerText = `${data.risk_level} Risk`;
+          badge.className = `risk-badge risk-${data.risk_level.toLowerCase()}`;
+
+          // Sources
+          const sourcesContainer = document.getElementById('sourcesList');
+          sourcesContainer.innerHTML = (data.sources || []).map(s => `<span class="source-tag">📄 ${s}</span>`).join('');
+
+          // Update key status to reflect usage
+          await fetchKeyPoolStatus();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to process request'));
+        }
+      } catch (err) {
+        alert('Network error connecting to backend: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Run RAG Analysis</span>';
+      }
+    }
+
+    // Run Simulation
+    async function runSimulation() {
+      const habitat = document.getElementById('simHabitat').value;
+      const oxygen_concentration = parseFloat(document.getElementById('simO2Range').value);
+      const pressure_psi = parseFloat(document.getElementById('simPressureRange').value);
+      const material_type = document.getElementById('simMaterial').value.trim();
+      const btn = document.getElementById('btnSim');
+      const box = document.getElementById('simResultBox');
+
+      if (!material_type) {
+        alert('Please specify a material type');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Simulating...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/simulator/stress-test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            habitat,
+            oxygen_concentration,
+            pressure_psi,
+            material_type
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.simulation_result) {
+          const sim = data.simulation_result;
+          box.classList.add('visible');
+          
+          document.getElementById('simMultiplier').innerText = `${sim.ignition_speed_multiplier}x`;
+          
+          const badge = document.getElementById('simSafetyBadge');
+          badge.innerText = sim.safety_status;
+          badge.className = `risk-badge risk-${sim.safety_status === 'Critical' ? 'high' : sim.safety_status === 'Warning' ? 'medium' : 'low'}`;
+
+          document.getElementById('simRecommendation').innerText = sim.recommendation;
+
+          // Also update 3D Canvas Visualizer
+          const hab3d = { lunar: 'lunar_base', mars: 'mars_rover', iss: 'iss' }[habitat] || 'lunar_base';
+          const geo3d = { lunar: 'spherical_blue_core', mars: 'hemispherical_spread', iss: 'ventilation_driven_trail' }[habitat] || 'spherical_blue_core';
+          const color3d = sim.safety_status === 'Critical' ? '#FF3333' : sim.safety_status === 'Warning' ? '#F59E0B' : '#10B981';
+          update3DFromResponse({
+            visual_3d_trigger_params: {
+              flame_geometry_type: geo3d,
+              flame_spread_velocity_mm_s: Number((sim.ignition_speed_multiplier * 4.2).toFixed(1)),
+              risk_color_hex: color3d,
+              particle_explosion_density: Math.round(sim.ignition_speed_multiplier * 350),
+              warning_flash_ui: sim.safety_status === 'Critical',
+              render_flame: true,
+            },
+            simulation_metadata: {
+              target_planet_or_habitat: hab3d,
+              safety_status: sim.safety_status === 'Critical' ? 'CRITICAL_HAZARD' : sim.safety_status === 'Warning' ? 'ELEVATED_RISK' : 'NOMINAL'
+            }
+          });
+
+          // Update key status to reflect simulation AI usage
+          await fetchKeyPoolStatus();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to run simulation'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Execute Simulation</span>';
+      }
+    }
+
+    // Run 3D Hazard Evaluation
+    async function run3DHazardEvaluation() {
+      const habitatMap = { lunar: 'lunar_base', mars: 'mars_rover', iss: 'iss' };
+      const rawHab = document.getElementById('simHabitat').value;
+      const target_planet_or_habitat = habitatMap[rawHab] || 'lunar_base';
+      const oxygen_concentration = parseFloat(document.getElementById('simO2Range').value);
+      const pressure_psi = parseFloat(document.getElementById('simPressureRange').value);
+      const material_type = document.getElementById('simMaterial').value.trim();
+      const btn = document.getElementById('btn3DHazard');
+      const box = document.getElementById('hazard3DResultBox');
+
+      if (!material_type) {
+        alert('Please specify a material type');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Evaluating 3D...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/simulator/hazard-evaluation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            target_planet_or_habitat,
+            oxygen_concentration,
+            pressure_psi,
+            material_type
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.simulation_metadata && data.visual_3d_trigger_params) {
+          box.classList.add('visible');
+
+          const meta = data.simulation_metadata;
+          const vis = data.visual_3d_trigger_params;
+
+          document.getElementById('h3dScore').innerText = `${meta.hazard_score_percentage}%`;
+          document.getElementById('h3dVelocity').innerText = `${vis.flame_spread_velocity_mm_s} mm/s`;
+          document.getElementById('h3dGeometry').innerText = vis.flame_geometry_type;
+          document.getElementById('h3dParticles').innerText = vis.particle_explosion_density;
+
+          const badge = document.getElementById('h3dSafetyBadge');
+          badge.innerText = meta.safety_status;
+          badge.className = `risk-badge risk-${meta.safety_status === 'CRITICAL_HAZARD' ? 'high' : meta.safety_status === 'ELEVATED_RISK' ? 'medium' : 'low'}`;
+
+          document.getElementById('h3dColorCode').innerText = vis.risk_color_hex;
+          document.getElementById('h3dColorPreview').style.background = vis.risk_color_hex;
+          document.getElementById('h3dFlashUI').innerText = vis.warning_flash_ui ? 'FLASH TRUE' : 'FALSE';
+          document.getElementById('h3dFlashUI').style.color = vis.warning_flash_ui ? '#f87171' : '#34d399';
+
+          document.getElementById('h3dExplanation').innerText = data.scientific_explanation;
+
+          // Update 3D Canvas Visualizer with live response
+          update3DFromResponse(data);
+
+          await fetchKeyPoolStatus();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to evaluate 3D hazard'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🪐 3D Engine Hazard</span>';
+      }
+    }
+
+    // Reset Key Pool
+    async function resetKeyPool() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/ai/key-reset`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          await fetchKeyPoolStatus();
+        } else {
+          alert('Failed to reset keys: ' + (data.error || 'Unknown'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    // ==========================================
+    // 3D Three.js Habitat Fire Simulation Canvas
+    // ==========================================
+    let scene3D, camera3D, renderer3D, controls3D;
+    let flameGroup, flameCore, flameCorona, flameLight;
+    let particleSystem, particlePositions, particleVelocities;
+    let samplePlate, chamberCylinder, chamberRings = [];
+    let autoRotate = true;
+    let wireframeMode = false;
+    let flameIgnited = true;
+    let current3DData = {
+      habitat: 'lunar_base',
+      geometry: 'spherical_blue_core',
+      velocity: 19.7,
+      color: '#FF3333',
+      particles: 1623,
+      flash: true,
+      renderFlame: true,
+      status: 'CRITICAL_HAZARD'
+    };
+
+    function init3DVisualizer() {
+      const container = document.getElementById('viewport3D');
+      if (!container || typeof THREE === 'undefined') return;
+
+      const width = container.clientWidth || 800;
+      const height = container.clientHeight || 480;
+
+      // 1. Scene
+      scene3D = new THREE.Scene();
+      scene3D.fog = new THREE.FogExp2(0x060913, 0.02);
+
+      // 2. Camera
+      camera3D = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera3D.position.set(0, 4.5, 11);
+
+      // 3. Renderer
+      renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer3D.setSize(width, height);
+      renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer3D.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer3D.toneMappingExposure = 1.3;
+      container.appendChild(renderer3D.domElement);
+
+      // 4. OrbitControls
+      if (typeof THREE.OrbitControls !== 'undefined') {
+        controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+        controls3D.enableDamping = true;
+        controls3D.dampingFactor = 0.05;
+        controls3D.maxPolarAngle = Math.PI / 2 + 0.15;
+        controls3D.minDistance = 3;
+        controls3D.maxDistance = 22;
+        controls3D.autoRotate = autoRotate;
+        controls3D.autoRotateSpeed = 1.0;
+      }
+
+      // 5. Lighting
+      const ambientLight = new THREE.AmbientLight(0x1e293b, 1.2);
+      scene3D.add(ambientLight);
+
+      const topLight = new THREE.DirectionalLight(0x38bdf8, 1.5);
+      topLight.position.set(6, 12, 6);
+      scene3D.add(topLight);
+
+      const backLight = new THREE.DirectionalLight(0x6366f1, 0.8);
+      backLight.position.set(-6, 8, -6);
+      scene3D.add(backLight);
+
+      flameLight = new THREE.PointLight(0xff3333, 4.0, 16);
+      flameLight.position.set(0, 1.5, 0);
+      scene3D.add(flameLight);
+
+      // 6. Build Scene Objects
+      buildHabitatChamber();
+      buildFlameObject();
+      buildParticleEmitter(current3DData.particles);
+
+      // 7. Event listeners
+      window.addEventListener('resize', onWindowResize3D);
+
+      // 8. Start Loop
+      animate3D();
+    }
+
+    // Build Habitat Cylindrical Chamber
+    function buildHabitatChamber() {
+      // Grid Floor
+      const gridHelper = new THREE.GridHelper(14, 28, 0x00e5ff, 0x1e293b);
+      gridHelper.position.y = -0.01;
+      scene3D.add(gridHelper);
+
+      // Glowing circular base ring
+      const ringGeo = new THREE.TorusGeometry(3.6, 0.04, 16, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.75 });
+      const baseRing = new THREE.Mesh(ringGeo, ringMat);
+      baseRing.rotation.x = Math.PI / 2;
+      scene3D.add(baseRing);
+
+      // Transparent cylindrical containment vessel
+      const cylGeo = new THREE.CylinderGeometry(3.6, 3.6, 6.5, 32, 1, true);
+      const cylMat = new THREE.MeshPhysicalMaterial({
+        color: 0x0ea5e9,
+        transparent: true,
+        opacity: 0.12,
+        roughness: 0.1,
+        metalness: 0.2,
+        transmission: 0.7,
+        side: THREE.DoubleSide
+      });
+      chamberCylinder = new THREE.Mesh(cylGeo, cylMat);
+      chamberCylinder.position.y = 3.25;
+      scene3D.add(chamberCylinder);
+
+      // Metallic structural rib rings
+      for (let y = 1.5; y <= 6.0; y += 2.0) {
+        const ribGeo = new THREE.TorusGeometry(3.62, 0.03, 16, 48);
+        const ribMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.3 });
+        const rib = new THREE.Mesh(ribGeo, ribMat);
+        rib.rotation.x = Math.PI / 2;
+        rib.position.y = y;
+        scene3D.add(rib);
+        chamberRings.push(rib);
+      }
+
+      // Material Test Sample Plate (solid fuel specimen)
+      const plateGeo = new THREE.BoxGeometry(2.4, 0.18, 2.4);
+      const plateMat = new THREE.MeshStandardMaterial({
+        color: 0x334155,
+        roughness: 0.4,
+        metalness: 0.5,
+      });
+      samplePlate = new THREE.Mesh(plateGeo, plateMat);
+      samplePlate.position.y = 0.09;
+      scene3D.add(samplePlate);
+
+      // Specimen label mount
+      const mountGeo = new THREE.CylinderGeometry(1.4, 1.6, 0.4, 32);
+      const mountMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+      const mount = new THREE.Mesh(mountGeo, mountMat);
+      mount.position.y = 0.2;
+      scene3D.add(mount);
+
+      // Floating dust particles
+      const starGeo = new THREE.BufferGeometry();
+      const starCount = 350;
+      const starPos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount * 3; i += 3) {
+        starPos[i] = (Math.random() - 0.5) * 30;
+        starPos[i + 1] = Math.random() * 14;
+        starPos[i + 2] = (Math.random() - 0.5) * 30;
+      }
+      starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+      const starMat = new THREE.PointsMaterial({ color: 0x94a3b8, size: 0.06, transparent: true, opacity: 0.45 });
+      const stars = new THREE.Points(starGeo, starMat);
+      scene3D.add(stars);
+    }
+
+    // Build Dynamic 3D Flame Object
+    function buildFlameObject() {
+      flameGroup = new THREE.Group();
+      flameGroup.position.set(0, 0.75, 0);
+
+      // 1. Inner core: Blue intense spherical core (NASA PSI BASS/ACME microgravity observation)
+      const coreGeo = new THREE.SphereGeometry(0.55, 32, 32);
+      const coreMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8, // Royal neon blue core
+        transparent: true,
+        opacity: 0.92,
+      });
+      flameCore = new THREE.Mesh(coreGeo, coreMat);
+      flameGroup.add(flameCore);
+
+      // 2. Outer flame envelope / corona
+      const coronaGeo = new THREE.SphereGeometry(0.95, 32, 32);
+      const coronaMat = new THREE.MeshStandardMaterial({
+        color: 0xff3333,
+        emissive: 0xff4500,
+        emissiveIntensity: 0.85,
+        transparent: true,
+        opacity: 0.75,
+        roughness: 0.2,
+      });
+      flameCorona = new THREE.Mesh(coronaGeo, coronaMat);
+      flameGroup.add(flameCorona);
+
+      scene3D.add(flameGroup);
+    }
+
+    // Build Particle Emitter
+    function buildParticleEmitter(count) {
+      if (particleSystem) {
+        scene3D.remove(particleSystem);
+      }
+
+      const clampedCount = Math.min(2500, Math.max(80, count || 1200));
+      const geo = new THREE.BufferGeometry();
+      particlePositions = new Float32Array(clampedCount * 3);
+      particleVelocities = [];
+
+      for (let i = 0; i < clampedCount; i++) {
+        // Start near flame core
+        const r = Math.random() * 0.4;
+        const theta = Math.random() * Math.PI * 2;
+        particlePositions[i * 3] = Math.cos(theta) * r;
+        particlePositions[i * 3 + 1] = 0.75 + Math.random() * 0.4;
+        particlePositions[i * 3 + 2] = Math.sin(theta) * r;
+
+        // Random velocities
+        particleVelocities.push({
+          vx: (Math.random() - 0.5) * 0.04,
+          vy: 0.02 + Math.random() * 0.06,
+          vz: (Math.random() - 0.5) * 0.04,
+          life: Math.random(),
+          maxLife: 0.6 + Math.random() * 0.8
+        });
+      }
+
+      geo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+      const pColor = new THREE.Color(current3DData.color || '#ff3333');
+      const mat = new THREE.PointsMaterial({
+        color: pColor,
+        size: 0.09,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending
+      });
+
+      particleSystem = new THREE.Points(geo, mat);
+      scene3D.add(particleSystem);
+    }
+
+    // Update 3D from API response
+    function update3DFromResponse(data) {
+      if (!data || !data.visual_3d_trigger_params) return;
+
+      const vis = data.visual_3d_trigger_params;
+      const meta = data.simulation_metadata || {};
+
+      current3DData.habitat = meta.target_planet_or_habitat || 'lunar_base';
+      current3DData.geometry = vis.flame_geometry_type || 'spherical_blue_core';
+      current3DData.velocity = vis.flame_spread_velocity_mm_s || 5.0;
+      current3DData.color = vis.risk_color_hex || '#FF3333';
+      current3DData.particles = vis.particle_explosion_density || 1200;
+      current3DData.flash = !!vis.warning_flash_ui;
+      current3DData.renderFlame = !!vis.render_flame;
+      current3DData.status = meta.safety_status || 'NOMINAL';
+
+      // Update HUD elements
+      const habLabels = {
+        lunar_base: 'Lunar Base (0.166g)',
+        mars_rover: 'Mars Habitat (0.38g)',
+        iss: 'ISS Microgravity (0g)',
+        earth: 'Earth Ground (1g)'
+      };
+      document.getElementById('hudHabitat').innerText = habLabels[current3DData.habitat] || current3DData.habitat;
+      document.getElementById('hudGeometry').innerText = current3DData.geometry;
+      document.getElementById('hudVelocity').innerText = `${current3DData.velocity} mm/s`;
+      document.getElementById('hudStatus').innerText = current3DData.status;
+      document.getElementById('hudStatus').style.color = current3DData.color;
+      document.getElementById('hudParticles').innerText = current3DData.particles;
+
+      // Update Warning Flash UI
+      const overlay = document.getElementById('canvasWarningOverlay');
+      if (overlay) {
+        if (current3DData.flash) {
+          overlay.classList.add('flashing');
+        } else {
+          overlay.classList.remove('flashing');
+        }
+      }
+
+      // Update Flame Mesh & Color
+      update3DFlameShape(current3DData.geometry, current3DData.color, current3DData.velocity);
+
+      // Update Particle Emitter
+      buildParticleEmitter(current3DData.particles);
+    }
+
+    // Morph flame shape and colors based on NASA PSI geometry mode
+    function update3DFlameShape(geometryType, colorHex, velocity) {
+      if (!flameGroup) return;
+
+      if (!current3DData.renderFlame || !flameIgnited) {
+        flameGroup.visible = false;
+        if (flameLight) flameLight.intensity = 0.2;
+        return;
+      }
+
+      flameGroup.visible = true;
+
+      const pColor = new THREE.Color(colorHex);
+      if (flameLight) {
+        flameLight.color.set(pColor);
+        flameLight.intensity = Math.min(6.5, 2.5 + velocity * 0.15);
+      }
+
+      // Scale multiplier driven by velocity
+      const scale = Math.min(2.4, Math.max(0.65, 0.7 + velocity * 0.065));
+
+      if (flameCorona && flameCorona.material) {
+        flameCorona.material.color.set(pColor);
+        flameCorona.material.emissive.set(pColor);
+      }
+
+      switch (geometryType) {
+        case 'spherical_blue_core':
+          // Microgravity / Lunar 0.166g: Perfect expanding sphere, blue inner core
+          flameCore.visible = true;
+          flameCore.material.color.set(0x38bdf8); // blue core
+          flameGroup.scale.set(scale, scale, scale);
+          flameGroup.position.set(0, 0.75 + scale * 0.3, 0);
+          break;
+
+        case 'hemispherical_spread':
+          // Mars 0.38g: flattened hemisphere on ground
+          flameCore.visible = true;
+          flameCore.material.color.set(0xfbbf24);
+          flameGroup.scale.set(scale * 1.35, scale * 0.75, scale * 1.35);
+          flameGroup.position.set(0, 0.65, 0);
+          break;
+
+        case 'ventilation_driven_trail':
+          // ISS 0g: elongated tear shape driven by horizontal forced ventilation airflow
+          flameCore.visible = true;
+          flameCore.material.color.set(0x60a5fa);
+          flameGroup.scale.set(scale * 1.9, scale * 0.65, scale * 0.75);
+          flameGroup.position.set(0.6, 0.8, 0);
+          break;
+
+        case 'buoyant_plume':
+          // Earth 1g: tall vertical teardrop rising upward
+          flameCore.visible = false;
+          flameGroup.scale.set(scale * 0.75, scale * 1.85, scale * 0.75);
+          flameGroup.position.set(0, 0.9 + scale * 0.4, 0);
+          break;
+
+        case 'smoldering_surface':
+          // Smoldering without open flame: flat glowing disc
+          flameCore.visible = false;
+          flameGroup.scale.set(scale * 1.4, 0.2, scale * 1.4);
+          flameGroup.position.set(0, 0.4, 0);
+          if (flameCorona && flameCorona.material) {
+            flameCorona.material.opacity = 0.55;
+          }
+          break;
+
+        default:
+          flameCore.visible = true;
+          flameGroup.scale.set(scale, scale, scale);
+          flameGroup.position.set(0, 0.75, 0);
+          break;
+      }
+    }
+
+    // Interactive Button Controls
+    function toggleAutoRotate() {
+      autoRotate = !autoRotate;
+      if (controls3D) controls3D.autoRotate = autoRotate;
+    }
+
+    function resetCamera3D() {
+      if (camera3D && controls3D) {
+        camera3D.position.set(0, 4.5, 11);
+        controls3D.target.set(0, 1.5, 0);
+        controls3D.update();
+      }
+    }
+
+    function toggleWireframe() {
+      wireframeMode = !wireframeMode;
+      if (chamberCylinder && chamberCylinder.material) {
+        chamberCylinder.material.wireframe = wireframeMode;
+      }
+      if (flameCorona && flameCorona.material) {
+        flameCorona.material.wireframe = wireframeMode;
+      }
+    }
+
+    function toggleFlameIgnition() {
+      flameIgnited = !flameIgnited;
+      update3DFlameShape(current3DData.geometry, current3DData.color, current3DData.velocity);
+    }
+
+    function onWindowResize3D() {
+      const container = document.getElementById('viewport3D');
+      if (!container || !renderer3D || !camera3D) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      camera3D.aspect = width / height;
+      camera3D.updateProjectionMatrix();
+      renderer3D.setSize(width, height);
+    }
+
+    // Animation Loop
+    let clock = new THREE.Clock();
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      // Flame flickering and natural pulsation
+      if (flameGroup && flameGroup.visible) {
+        const pulse = 1.0 + Math.sin(time * 7.5) * 0.045 + Math.cos(time * 12.0) * 0.03;
+        flameCorona.scale.set(pulse, pulse * (1 + Math.sin(time * 9.0) * 0.05), pulse);
+
+        if (flameLight) {
+          flameLight.intensity = Math.max(2.0, flameLight.intensity + (Math.random() - 0.5) * 0.35);
+        }
+      }
+
+      // Rotate structural rings gently
+      chamberRings.forEach((r, idx) => {
+        r.rotation.z += (idx % 2 === 0 ? 0.003 : -0.003);
+      });
+
+      // Animate Particles
+      if (particleSystem && particlePositions && particleVelocities) {
+        const pCount = particleVelocities.length;
+        for (let i = 0; i < pCount; i++) {
+          const v = particleVelocities[i];
+          particlePositions[i * 3] += v.vx;
+          particlePositions[i * 3 + 1] += v.vy;
+          particlePositions[i * 3 + 2] += v.vz;
+
+          v.life += delta;
+          if (v.life > v.maxLife) {
+            // Respawn near flame
+            v.life = 0;
+            const r = Math.random() * 0.45;
+            const theta = Math.random() * Math.PI * 2;
+            particlePositions[i * 3] = Math.cos(theta) * r;
+            particlePositions[i * 3 + 1] = 0.75 + Math.random() * 0.35;
+            particlePositions[i * 3 + 2] = Math.sin(theta) * r;
+          }
+        }
+        particleSystem.geometry.attributes.position.needsUpdate = true;
+      }
+
+      if (controls3D) {
+        controls3D.update();
+      }
+
+      if (renderer3D && scene3D && camera3D) {
+        renderer3D.render(scene3D, camera3D);
+      }
+    }
+
+    // Initialize on load
+    window.onload = () => {
+      checkBackendHealth();
+      init3DVisualizer();
+    };
+  </script>
+</body>
+</html>
+
