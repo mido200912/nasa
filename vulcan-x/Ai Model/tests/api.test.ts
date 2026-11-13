@@ -1,5 +1,15 @@
 import { describe, expect, test } from 'bun:test';
-import app from '../src/index';
+import { createApplication } from '../src/index';
+import { AiProviderService } from '../src/services/aiProviderService';
+
+// These API contract tests use an explicitly controlled provider response,
+// never live inference evidence. Real missing-provider behavior has separate tests.
+class FixtureProvider extends AiProviderService {
+  override async generateCompletion() {
+    return { text: 'Technical provider contract fixture; not scientific evidence or verified live inference.', keyUsed: 1, provider: 'openrouter', model: 'contract-fixture' };
+  }
+}
+const app = createApplication(new FixtureProvider());
 
 describe('Vulcan-X Backend & AI Engine API Tests', () => {
   test('GET /test serves interactive HTML test bench', async () => {

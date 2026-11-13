@@ -75,7 +75,7 @@ export class SimulatorController {
         200
       );
     } catch (err: any) {
-      if (c.req.raw.signal.aborted) return c.json({ success: false, error: 'Request cancelled' }, 499);
+      if (c.req.raw.signal.aborted) return Response.json({ success: false, error: 'Request cancelled' }, { status: 499 });
       console.error('[SimulatorController] Stress test failed');
       return c.json(
         {
@@ -130,7 +130,7 @@ export class SimulatorController {
       const result = await this.physicsEngineService.evaluateHazard(parseResult.data, c.req.raw.signal);
       return c.json(result, 200);
     } catch (err: any) {
-      if (c.req.raw.signal.aborted) return c.json({ success: false, error: 'Request cancelled' }, 499);
+      if (c.req.raw.signal.aborted) return Response.json({ success: false, error: 'Request cancelled' }, { status: 499 });
       console.error('[SimulatorController] Hazard evaluation failed');
       return c.json(
         {

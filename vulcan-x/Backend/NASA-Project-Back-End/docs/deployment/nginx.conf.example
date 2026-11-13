@@ -1,0 +1,39 @@
+# TEMPLATE ONLY: no domain, certificate, upstream or deployment is approved.
+# Place zones in the http {} block. Replace all APPROVED_* tokens before nginx -t.
+# This assumes nginx is the immediate public edge (no unconfigured CDN before it).
+limit_req_zone $binary_remote_addr zone=flame_general:10m rate=2r/s;
+limit_req_zone $binary_remote_addr zone=flame_knowledge:10m rate=6r/m;
+limit_conn_zone $binary_remote_addr zone=flame_connections:10m;
+server {
+    listen 443 ssl;
+    server_name APPROVED_PUBLIC_HOST;
+    ssl_certificate APPROVED_CERTIFICATE_PATH;
+    ssl_certificate_key APPROVED_PRIVATE_KEY_PATH;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 32k;
+    client_body_timeout 5s;
+    limit_conn flame_connections 8;
+    limit_req_status 429;
+    location / {
+        limit_req zone=flame_general burst=20 nodelay;
+        proxy_pass http://APPROVED_PRIVATE_NEXT_ORIGIN;
+        proxy_set_header Host $host;
+        proxy_set_header X-Flame-Client-IP $remote_addr;
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 80s; # Must be reviewed against actual selected budgets.
+        proxy_connect_timeout 5s;
+    }
+    location = /api/backend/knowledge/queries {
+        limit_req zone=flame_knowledge burst=1 nodelay;
+        proxy_pass http://APPROVED_PRIVATE_NEXT_ORIGIN;
+        proxy_set_header Host $host;
+        proxy_set_header X-Flame-Client-IP $remote_addr;
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 80s;
+        proxy_connect_timeout 5s;
+    }
+}
+# A separate approved port-80 virtual host must redirect only the approved Host
+# to HTTPS. Reject unknown Hosts. Never publish API/Bun/SQL listeners.

@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
+import { productionBoundary } from './middleware/production';
 import { env } from './config/env';
 import { AiProviderService } from './services/aiProviderService';
 import { RagService } from './services/ragService';
@@ -11,21 +10,29 @@ import { SimulatorController } from './controllers/simulatorController';
 import { createMainRouter } from './routes';
 import { OFFICIAL_NASA_CORPUS } from './data/official_nasa_corpus';
 
+export function createApplication(aiProviderService = new AiProviderService()) {
 const app = new Hono();
 
 // Global Middlewares
-app.use('*', logger());
-app.use(
-  '*',
-  cors({
-    origin: '*',
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+app.use('*', productionBoundary());
+app.onError((_error, c) => c.json({ success: false, errorCode: 'INTERNAL_ERROR' }, 500));
+app.get('/health/live', (c) => c.json({ status: 'live' }));
+app.get('/health/ready', (c) => {
+  const possible = aiProviderService.getKeyPoolStatus().keys.some((slot) =>
+    slot.maskedKey !== 'NOT_CONFIGURED' && (!slot.cooldownUntil || Date.parse(slot.cooldownUntil) <= Date.now()));
+  return c.json({ status: possible ? 'ready' : 'unavailable', provider: 'unknown' }, possible ? 200 : 503);
+});
+// Private server-to-server service: no browser CORS or production test/key tools.
+app.use('*', async (c, next) => {
+  if (process.env.NODE_ENV === 'production' && ['/test', '/api/v1/ai/key-status', '/api/v1/ai/key-reset'].includes(c.req.path))
+    return c.notFound();
+  if (process.env.NODE_ENV === 'production' && c.req.method === 'POST'
+    && ['/api/v1/simulator/stress-test', '/api/v1/simulator/hazard-evaluation', '/api/v1/simulator/physics-engine'].includes(c.req.path))
+    return c.json({ success: false, error: 'Legacy illustrative formulas are not approved for live scientific analysis.', errorCode: 'HABITAT_FIXTURE_NOT_APPROVED' }, 422);
+  await next();
+});
 
 // Dependency Injection: Initialize Services
-const aiProviderService = new AiProviderService();
 const ragService = new RagService(aiProviderService);
 const physicsSimulatorService = new PhysicsSimulatorService(aiProviderService);
 const physicsEngineService = new PhysicsEngineService(aiProviderService);
@@ -37,6 +44,9 @@ const simulatorController = new SimulatorController(physicsSimulatorService, phy
 // Mount Application Routes
 const mainRouter = createMainRouter(aiController, simulatorController);
 app.route('/', mainRouter);
+return app;
+}
+const app = createApplication();
 
 // Banner
 console.log('================================================================');
@@ -45,7 +55,7 @@ console.log('🏆 2026 NASA Space Apps Challenge: "Flame in Freefall"');
 console.log('================================================================');
 console.log(`📡 Server running on: http://localhost:${env.PORT}`);
 console.log(`📚 Official NASA source chunks loaded: ${OFFICIAL_NASA_CORPUS.length}`);
-console.log(`🔑 5 OpenRouter API Key Rotation Pool: Active`);
+console.log(`🔑 OpenRouter configured key slots: ${env.API_KEYS.filter((slot) => slot.key.length > 5).length}/5 (not proof of provider connectivity)`);
 console.log('----------------------------------------------------------------');
 console.log(`• Knowledge & RAG Query : POST http://localhost:${env.PORT}/api/v1/ai/query`);
 console.log(`• Habitat Stress Test   : POST http://localhost:${env.PORT}/api/v1/simulator/stress-test`);

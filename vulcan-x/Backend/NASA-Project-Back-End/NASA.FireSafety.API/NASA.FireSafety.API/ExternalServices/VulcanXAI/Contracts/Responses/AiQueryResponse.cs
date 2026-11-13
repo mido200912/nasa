@@ -15,4 +15,14 @@ public sealed class AiQueryResponse
 
     [JsonPropertyName("risk_level")]
     public string RiskLevel { get; set; } = string.Empty;
+
+    [JsonPropertyName("generation")]
+    public AiGeneration? Generation { get; set; }
+}
+
+public sealed class AiGeneration
+{
+    [JsonPropertyName("mode")] public string Mode { get; set; } = string.Empty;
+    [JsonPropertyName("provider")] public string Provider { get; set; } = string.Empty;
+    [JsonPropertyName("model")] public string Model { get; set; } = string.Empty;
 }

@@ -108,6 +108,56 @@ public sealed class SqlWorkflowTests(ITestOutputHelper output)
     }
 
     [SqlFact]
+    public async Task DuplicatePostsAreDistinctRecords_NotSilentlyClaimedIdempotent()
+    {
+        await using var db = await ReadyDatabase();
+        var id = await db.SpaceEnvironments.Where(x => x.Code == "ISS").Select(x => x.Id).SingleAsync();
+        var ai = new ControlledAi { Query = (_, _) => Task.FromResult(new AiQueryResponse { Success = true, Answer = "Technical duplicate-workflow fixture." }) };
+        var request = new CreateKnowledgeQueryRequest { EnvironmentId = id, Question = $"SQL duplicate fixture {Guid.NewGuid()}" };
+        var service = new KnowledgeQueryService(db, ai);
+        var first = await service.CreateAsync(request, CancellationToken.None);
+        var second = await service.CreateAsync(request, CancellationToken.None);
+        Assert.NotEqual(first.Id, second.Id);
+        await using var reader = OpenDatabase();
+        Assert.Equal(2, await reader.KnowledgeQueries.CountAsync(x => x.Question == request.Question));
+        Assert.Equal("Completed", (await new KnowledgeQueryService(reader, ai).GetAsync(first.Id, CancellationToken.None))!.Status);
+    }
+
+    [SqlFact]
+    public async Task RealForeignKeyFailureRollsBackOnlyThisTestTransaction()
+    {
+        await using var db = await ReadyDatabase();
+        var queryId = Guid.NewGuid();
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        db.KnowledgeQueries.Add(new KnowledgeQuery { Id = queryId, Question = "Technical rollback fixture only", Status = AnalysisStatus.Running, CorrelationId = Guid.NewGuid() });
+        await db.SaveChangesAsync();
+        db.KnowledgeCitations.Add(new KnowledgeCitation { KnowledgeQueryId = queryId, MatchStatus = CitationMatchStatus.Matched, ResearchSourceId = -1 });
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        await transaction.RollbackAsync();
+        await using var reader = OpenDatabase();
+        Assert.False(await reader.KnowledgeQueries.AnyAsync(x => x.Id == queryId));
+        Assert.False(await reader.KnowledgeCitations.AnyAsync(x => x.KnowledgeQueryId == queryId));
+    }
+
+    [SqlFact]
+    public async Task ReportedProviderProvenanceRoundTripsThroughRealSql_UsingExplicitContractFixture()
+    {
+        await using var db = await ReadyDatabase();
+        var id = await db.SpaceEnvironments.Where(x => x.Code == "ISS").Select(x => x.Id).SingleAsync();
+        var ai = new ControlledAi { Query = (_, _) => Task.FromResult(new AiQueryResponse {
+            Success = true, Answer = "Technical provenance fixture, not live inference.",
+            Generation = new AiGeneration { Mode = "ProviderInference", Provider = "openrouter", Model = "technical-contract-fixture" }
+        }) };
+        var created = await new KnowledgeQueryService(db, ai).CreateAsync(new() { EnvironmentId = id, Question = $"SQL provenance fixture {Guid.NewGuid()}" }, CancellationToken.None);
+        await using var reader = OpenDatabase();
+        var result = await new KnowledgeQueryService(reader, ai).GetAsync(created.Id, CancellationToken.None);
+        Assert.Equal("technical-contract-fixture", result!.Generation!.Model);
+        Assert.Equal("openrouter", result.Generation.Provider);
+        Assert.Equal("ProviderInference", result.Generation.Mode);
+        output.WriteLine($"SQL provenance contract fixture queryId={created.Id}; not actual provider inference");
+    }
+
+    [SqlFact]
     public async Task CancellationAfterRunningWasCommittedPersistsFailedUsingIndependentToken()
     {
         await using var db = await ReadyDatabase();

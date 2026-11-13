@@ -1,5 +1,7 @@
 # Milestones 5–6 execution report
 
+> Historical evidence below is retained unchanged. Current provider-only Knowledge semantics, live catalog UI, safety fixes and freshly executed verification are documented in [integration-audit-2026-11-13.md](integration-audit-2026-11-13.md). Earlier HTTP successes based on source-bound local text are not proof of LLM inference.
+
 ### Merge reconciliation with updated main — 13 November 2026
 
 Merged main commit `f826fb6` (NASA link-intelligence expansion and optional grounded provider generation) with the Milestone 5/6 implementation. Preserved both retrieval/link features and cancellation safeguards. The newer Knowledge generation path now receives the caller signal and cancels actual provider work at main's seven-second deadline; client cancellation cannot silently become fallback success. Added one regression case for this merged path. Post-resolution checks: **14 Bun tests / 187 assertions** and **124 frontend unit tests** passed; frontend lint passed. Earlier live evidence below describes the implementation at its execution time: the merged service now supports optional provider synthesis, but genuine provider inference has still not been verified without credentials. Scientific approval/deployment blockers remain unchanged.

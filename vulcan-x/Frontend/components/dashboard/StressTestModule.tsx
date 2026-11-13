@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSimulationStore } from "@/components/SimulationProvider";
 import { EnvironmentSelect, MaterialSelect, ParameterSlider } from "@/components/dashboard/Controls";
 import { HabitatAnalysisPanel } from "@/components/dashboard/HabitatAnalysisPanel";
+import { HabitatRecordLookup } from "@/components/dashboard/HabitatRecordLookup";
 import { calculateSimulation, materialCatalog } from "@/lib/simulation";
 import { chamberLift } from "@/lib/stress-test";
 import styles from "./StressTestModule.module.css";
@@ -45,7 +46,7 @@ export function StressTestModule() {
         <div className={styles.hud} aria-label="Habitat chamber status">
           <span className={styles.pill} data-testid="chamber-morphology"><span>Flame morphology</span>{chamberLift(gravityG) < 0.5 ? "Spherical Cool Plasma" : "Buoyant Teardrop"}</span>
           <span className={styles.pill} data-testid="nozzle-status" role="status"><span>Nozzle status</span>{extinguished ? "EXTINGUISHED" : isSuppressing ? `DISCHARGING ${result?.suppressionSpec.dropletMicrons ?? 50}µm MIST` : "STANDBY"}</span>
-          <span className={styles.pill} data-testid="stress-test-sync" role="status"><span>API sync</span>{loading ? "Syncing…" : error ? "Unavailable · local preview" : result ? "Synced · unvalidated" : "Pending · local preview"}</span>
+          <span className={styles.pill} data-testid="stress-test-sync" role="status"><span>Local teaching API · no AI/backend</span>{loading ? "Syncing…" : error ? "Unavailable · local preview" : result ? "Synced · illustrative only" : "Pending · local preview"}</span>
         </div>
         <FlameSimulator3D input={input} />
         <div className={styles.actions}>{extinguished ? <button className="button" onClick={resetIgnition}><Flame size={18} aria-hidden="true" />Re-Ignite Test Sample</button> : <button className="button" disabled={isSuppressing} onClick={deploy}><Droplets size={18} aria-hidden="true" />{isSuppressing ? "Mist suppression in progress…" : "Deploy Fine-Water-Mist Suppression"}</button>}<p className="cc-caption">Simulated discharge only. Droplet size and extinguishment time are animation settings, not equipment guidance.</p></div>
@@ -55,6 +56,7 @@ export function StressTestModule() {
         <dl className="cc-facts"><div><dt>Burn-rate multiplier</dt><dd data-testid="burn-multiplier">{metrics.burnRateMultiplier.toFixed(1)}× <small>Earth reference</small></dd></div><div><dt>Ignition delay*</dt><dd>{metrics.ignitionDelaySeconds} <small>s / synthetic</small></dd></div><div><dt>Toxicity index*</dt><dd>{metrics.toxicityIndex} <small>/ 100</small></dd></div></dl><p className="cc-caption">*Teaching values only. No material-specific ignition or toxicology data is loaded.</p><Link className="text-link" href="/dashboard/playbook">Review a playbook<ArrowUpRight size={15} aria-hidden="true" /></Link>
       </section></div>
     <HabitatAnalysisPanel />
+    <HabitatRecordLookup />
     <TelemetryCharts input={input} />
     <details className="cc-methodology"><summary>Model assumptions & limitations</summary><p>This interface uses a transparent, synthetic heuristic—not NASA BASS-II, Saffire, or FLEX empirical curves. The 3.5× lunar burn-rate example comes from the project brief, not validated measurements. Oxygen and pressure change demonstration weights; material profiles are synthetic. Gravity controls the illustration, not a physically calibrated spread law. No scenario is certified safe.</p><p>Engineering use requires grade-specific experimental data, documented operating conditions, uncertainty analysis, and independent validation.</p></details>
   </>;

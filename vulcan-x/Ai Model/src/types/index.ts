@@ -15,6 +15,7 @@ export interface AiQueryResponse {
   retrieved_chunks: RagChunk[];
   emergency_playbook: string[];
   risk_level: RiskLevel;
+  generation: { mode: 'ProviderInference'; provider: 'openrouter'; model: string };
 }
 
 export interface StressTestRequest {

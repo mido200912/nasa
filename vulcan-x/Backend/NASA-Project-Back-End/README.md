@@ -2,6 +2,12 @@
 
 ASP.NET Core **net8.0**, EF Core 8, SQL Server. Anonymous API; no login/JWT/roles or extra CORS. Browser calls same-origin Next.js routes, never this origin directly.
 
+For release preparation see the [Milestone 7 report](docs/deployment/milestone-7-production-readiness-report.md),
+[operations/SQL runbook](docs/deployment/operations-runbook.md) and
+[hosting decision pack](docs/deployment/hosting-decision-pack.md). .NET 8 is retained
+as required but reached end of support on 10 November 2026; public release requires
+an explicit owner support-risk decision. Local SQL Staging checks are not production TLS signoff.
+
 ## Prerequisites and configuration
 
 - Install the .NET **8.0.4xx SDK** and ASP.NET Core 8 runtime. `NASA.FireSafety.API/global.json` permits only .NET 8 SDK patch updates. Use the `.sln` for SDK 8; the older `.slnx` is retained but requires newer solution tooling, not a framework upgrade.
@@ -47,6 +53,8 @@ SQL tests reject databases not named `Flame_M6_*`. They use the real SQL Server 
 - Knowledge/Habitat records use existing `Failed` status for cancellation (`REQUEST_CANCELLED`), with completion time. Failure cleanup reloads persisted state after discarding partial tracked results and uses its own **five-second** token. A completed commit is not overwritten by late cancellation. If SQL is unavailable, terminal persistence cannot be guaranteed and no successful cleanup is claimed.
 - Cancellation does not make POST idempotent. There is no automatic POST retry or new idempotency contract.
 - Habitat persisted submission is disabled by default at the controller **and UI**. Enabling backend `HabitatSubmission:Enabled` requires a nonempty `ApprovedFixtureReference`, which must identify genuine science-team approval/provenance. No such fixture was supplied; do not enable it from a demo/test configuration. Scientific-validation flags remain false.
+- Legacy raw simulator controllers now share this disabled gate; they must not bypass Habitat safety. Bun additionally rejects these unvalidated simulator paths in production. Approval alone is not a validated numerical adapter.
 - Knowledge still forwards **only question/environment** to Vulcan-X; material/year/max-sources remain saved context. Language remains accepted but not persisted/forwarded. Exact local title matching is not scientific verification.
+- Provider failures are persisted, never replaced with local-text success. Provider-reported provenance round-trips in existing `ModelName`, `ModelVersion`, `ContractVersion` columns (`knowledge-inference/1`); historical/metadata-free records return `Unspecified`. No migration was needed.
 
-See [integration execution plan](docs/integration/frontend-backend-integration-plan.md) and [current evidence/report](docs/integration/milestone-5-6-report.md) for actual live gates, controlled upstream tests and unresolved approvals.
+See the [current integration audit](docs/integration/integration-audit-2026-11-13.md) for fresh execution evidence and remaining external blockers. The [integration plan](docs/integration/frontend-backend-integration-plan.md) and [milestone report](docs/integration/milestone-5-6-report.md) retain historical context.

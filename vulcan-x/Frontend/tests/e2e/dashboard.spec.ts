@@ -85,6 +85,7 @@ test("terrestrial mode and target charts are interactive without claiming measur
 
 test("material search, empty state, source filter, comparator and simulator selection work", async ({ page }) => {
   await page.goto("/dashboard/materials");
+  await page.getByRole("button", { name: "Offline material scenarios", exact: true }).click();
   await page.getByRole("searchbox", { name: "Search materials" }).fill("no match here");
   await expect(page.getByRole("heading", { name: "No materials match" })).toBeVisible();
   await page.getByRole("button", { name: "Clear filters", exact: true }).click();

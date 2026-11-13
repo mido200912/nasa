@@ -8,10 +8,19 @@ import { Choice } from "@/components/dashboard/Controls";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSimulationStore } from "@/components/SimulationProvider";
 import { calculateSimulation, isMaterial, materialCatalog, presets, type MaterialId } from "@/lib/simulation";
+import { CatalogBrowser } from "@/components/dashboard/CatalogBrowser";
 
 const HazardRadar = dynamic(() => import("@/components/dashboard/TelemetryCharts").then((module) => module.HazardRadar), { ssr: false, loading: () => <div className="cc-chart">Preparing comparison…</div> });
 
 export function MaterialsModule() {
+  const [mode, setMode] = useState<"live" | "offline">("live");
+  return <><div className="cc-actions cc-mode-actions" role="group" aria-label="Material workspace mode">
+    <button className="button button-outline" aria-pressed={mode === "live"} onClick={() => setMode("live")}>Live research catalog</button>
+    <button className="button button-outline" aria-pressed={mode === "offline"} onClick={() => setMode("offline")}>Offline material scenarios</button>
+  </div>{mode === "live" ? <><div className="cc-page-heading"><div><h1>Material & experiment matrix</h1><p>Browse persisted catalog records and their linked experiments and sources.</p></div></div><CatalogBrowser initialKind="materials" allowExperiments /></> : <OfflineMaterials />}</>;
+}
+
+function OfflineMaterials() {
   const [search, setSearch] = useState("");
   const [family, setFamily] = useState("all");
   const [source, setSource] = useState("all");
@@ -33,7 +42,7 @@ export function MaterialsModule() {
     if (slot === "first") { setFirst(value); if (value === second) setSecond(first); }
     else { setSecond(value); if (value === first) setFirst(second); }
   }
-  return <><div className="cc-page-heading"><div><h1>Material & experiment matrix</h1><p>A research starting point, not an imported NASA PSI dataset.</p></div><a className="button button-outline" href="https://www.nasa.gov/psi/" target="_blank" rel="noreferrer">Open NASA PSI ↗</a></div>
+  return <><div className="cc-page-heading"><div><h1>Material & experiment matrix</h1><p>Offline educational scenarios only. Not live catalog data or measured material performance.</p></div><a className="button button-outline" href="https://www.nasa.gov/psi/" target="_blank" rel="noreferrer">Open NASA PSI ↗</a></div>
     <section className="cc-panel"><div className="cc-material-filters"><div className="cc-field"><label htmlFor="material-search">Search materials</label><div className="cc-search"><Search size={17} aria-hidden="true" /><input id="material-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, family, or program" maxLength={100} /></div></div><Choice id="material-family" label="Material family" value={family} onChange={setFamily} options={[{ value: "all", label: "All families" }, ...["Electrical", "Interior", "Polymer", "Textile"].map((value) => ({ value, label: value }))]} /><Choice id="material-source" label="Research context" value={source} onChange={setSource} options={[{ value: "all", label: "All programs" }, ...["BASS-II", "Saffire", "SOFIE"].map((value) => ({ value, label: value }))]} /></div><p className="cc-caption" role="status">{filtered.length} of {materialCatalog.length} materials shown. LOI is not curated; program tags are reading context, not verified material-test matches.</p>
       <Table className="cc-material-table"><caption className="sr-only">Spacecraft material research candidates. Risk values are synthetic lunar-scenario indices. Earth limiting oxygen index measurements are not loaded.</caption><TableHeader><TableRow><TableHead>Material name</TableHead><TableHead>Earth O₂ limit (LOI)</TableHead><TableHead>Lunar 30% O₂ index</TableHead><TableHead>Microgravity behavior</TableHead><TableHead>Research context</TableHead><TableHead>Use in simulator</TableHead></TableRow></TableHeader><TableBody>{filtered.length ? filtered.map((material) => {
         const risk = calculateSimulation({ ...presets.lunar, selectedMaterial: material.id });

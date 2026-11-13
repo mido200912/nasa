@@ -85,4 +85,9 @@ describe("Habitat Analysis same-origin API client", () => {
     const request = createHabitatRequest({ ...emptyHabitatDraft(17, 23), oxygenVolumePercent: "30", pressureKPa: "70.3" }, true);
     await expect(submitHabitatAnalysis(request)).resolves.toMatchObject({ problem: { status: 502, errorCode: "HABITAT_INVALID_RESPONSE" } });
   });
+
+  it("rejects malformed nested saved inputs before the result view can render them", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...completeAnalysis, inputs: { ...completeAnalysis.inputs, oxygenVolumePercent: null } })));
+    await expect(getHabitatAnalysis(analysisId)).resolves.toMatchObject({ problem: { errorCode: "HABITAT_INVALID_RESPONSE" } });
+  });
 });

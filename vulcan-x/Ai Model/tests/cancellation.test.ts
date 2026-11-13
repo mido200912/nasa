@@ -15,7 +15,7 @@ test('provider cancellation reaches fetch and does not rotate keys or produce a 
       upstream = init!.signal!;
       upstream.addEventListener('abort', () => reject(upstream!.reason));
       resolve();
-    })) as typeof fetch;
+    })) as unknown as typeof fetch;
   });
   const controller = new AbortController();
   const pending = provider.generateCompletion('Technical cancellation test', 'Not a scientific request', controller.signal);

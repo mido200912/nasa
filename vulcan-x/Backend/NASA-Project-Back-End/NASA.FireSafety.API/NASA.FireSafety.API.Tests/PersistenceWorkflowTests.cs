@@ -106,6 +106,21 @@ public sealed class PersistenceWorkflowTests
         return (environment, material);
     }
 
+    [Fact]
+    public async Task Knowledge_RetainsReportedProviderProvenanceOnRetrieval_WithoutClaimingFixtureIsLiveInference()
+    {
+        await using var db = CatalogTestSupport.CreateContext();
+        var (environment, _) = await AddCatalogAsync(db);
+        var ai = new StubAiClient { QueryResponse = new AiQueryResponse { Success = true, Answer = "Technical provider fixture, not actual model inference.", Generation = new AiGeneration { Mode = "ProviderInference", Provider = "openrouter", Model = "technical-fixture" } } };
+        var service = new KnowledgeQueryService(db, ai);
+        var created = await service.CreateAsync(new() { EnvironmentId = environment.Id, Question = "Provenance contract fixture" }, CancellationToken.None);
+        var retrieved = await service.GetAsync(created.Id, CancellationToken.None);
+        Assert.Equal("ProviderInference", retrieved!.Generation!.Mode);
+        Assert.Equal("technical-fixture", retrieved.Generation.Model);
+        Assert.Equal("openrouter", retrieved.Generation.Provider);
+        Assert.Equal("knowledge-inference/1", (await db.KnowledgeQueries.SingleAsync()).ContractVersion);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

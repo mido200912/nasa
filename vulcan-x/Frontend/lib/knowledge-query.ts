@@ -19,6 +19,7 @@ export type CreateKnowledgeQueryRequest = {
 };
 
 export type KnowledgeQuery = {
+  generation?: { mode: "ProviderInference" | "Unspecified"; provider: string | null; model: string | null } | null;
   id: string;
   status: string;
   question: string;
@@ -123,6 +124,7 @@ function isKnowledgeQuery(value: unknown): value is KnowledgeQuery {
   return isRecord(value) && typeof value.id === "string" && isGuid(value.id) && typeof value.status === "string" && typeof value.question === "string"
     && isNullableString(value.answer) && (value.groundingStatus === null || ["HasMatchedCitations", "HasOnlyUnmatchedCitations", "NoCitations"].includes(value.groundingStatus as string))
     && typeof value.isMock === "boolean" && Array.isArray(value.citations) && value.citations.every(isKnowledgeCitation)
+    && (value.generation === undefined || value.generation === null || (isRecord(value.generation) && ["ProviderInference", "Unspecified"].includes(value.generation.mode as string) && isNullableString(value.generation.provider) && isNullableString(value.generation.model)))
     && (value.error === null || (isRecord(value.error) && isNullableString(value.error.code) && isNullableString(value.error.message)))
     && typeof value.disclaimer === "string";
 }

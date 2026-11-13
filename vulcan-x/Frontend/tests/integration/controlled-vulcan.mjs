@@ -1,7 +1,11 @@
 // TEST HARNESS ONLY. Never imported by the application or deployed as a route.
-// Forwards successful answers from the actual local Vulcan-X; does not invent any.
+// Explicit timing fixtures OR genuine provider forwarding. Neither mode is scientific evidence.
 import { createServer } from "node:http";
 
+const fixture = process.env.FIRE_SAFETY_TIMING_FIXTURE === "1";
+if (!fixture && process.env.FIRE_SAFETY_LIVE_PROVIDER !== "1") {
+  throw new Error("Select FIRE_SAFETY_TIMING_FIXTURE=1 (not inference) or FIRE_SAFETY_LIVE_PROVIDER=1 (requires real credentials).");
+}
 let active = 0;
 let disconnected = 0;
 createServer(async (request, response) => {
@@ -23,8 +27,13 @@ createServer(async (request, response) => {
       const timer = setTimeout(resolve, 11_000);
       controller.signal.addEventListener("abort", () => { clearTimeout(timer); reject(controller.signal.reason); }, { once: true });
     });
+    if (fixture) {
+      response.writeHead(200, { "Content-Type": "application/json", "X-Test-Fixture": "timing-only-not-inference" });
+      response.end(JSON.stringify({ success: true, answer: "Technical timing fixture only; not provider inference or scientific evidence.", sources: [], retrieved_chunks: [], emergency_playbook: [], risk_level: "Low" }));
+      return;
+    }
     const upstream = await fetch("http://127.0.0.1:4000/api/v1/ai/query", { method: "POST", headers: { "Content-Type": "application/json" }, body, signal: controller.signal });
     response.writeHead(upstream.status, { "Content-Type": "application/json" });
     response.end(await upstream.text());
   } catch { if (!controller.signal.aborted) { response.writeHead(503); response.end(); } }
-}).listen(4011, "127.0.0.1", () => console.log("Controlled upstream TEST HARNESS on loopback 4011; no fabricated answers"));
+}).listen(4011, "127.0.0.1", () => console.log(`Controlled upstream TEST HARNESS on loopback 4011; mode=${fixture ? "EXPLICIT TIMING FIXTURE — NOT INFERENCE" : "real provider forwarding"}`));

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 
 // Opt-in REAL API/SQL tests. No page.route(), fake IDs or fabricated AI responses.
 test.describe("live SQL integration", () => {
@@ -29,19 +30,24 @@ test.describe("live SQL integration", () => {
     console.log(`LIVE SQL catalog IDs: environment=${environments[0].id}, material=${material.id}, experiment=${experiment.id}, source=${source.id}, technology=${technology.id}`);
   });
 
-  test("real browser selection, source-bound Knowledge POST and saved-ID retrieval", async ({ page, request }) => {
+  test("real browser provider Knowledge POST and saved-ID retrieval", async ({ page, request }) => {
     test.skip(process.env.FIRE_SAFETY_LIVE_FAILURE === "1", "Vulcan-X intentionally unavailable for separate failure test.");
+    test.skip(process.env.FIRE_SAFETY_LIVE_PROVIDER !== "1", "Genuine provider credentials/inference must be explicitly configured; no local-text success fallback.");
+    expect(process.env.FIRE_SAFETY_TIMING_FIXTURE).not.toBe("1");
+    expect(process.env.FIRE_SAFETY_PROVIDER_UNAVAILABLE).not.toBe("1");
     const environments = await (await request.get("/api/backend/environments")).json();
     const environment = environments.find((item: { code: string }) => item.code === "ISS");
     const browserBackendRequests: string[] = [];
+    const browserResponses: { path: string; method: string; status: number }[] = [];
     page.on("request", (request) => { if (request.url().includes("/api/")) browserBackendRequests.push(request.url()); });
+    page.on("response", (response) => { if (response.url().includes("/api/")) browserResponses.push({ path: new URL(response.url()).pathname, method: response.request().method(), status: response.status() }); });
     await page.goto("/dashboard/playbook");
     await page.getByRole("button", { name: "Live Knowledge", exact: true }).click();
     await page.getByRole("combobox", { name: "Catalog environment", exact: true }).click();
     await page.getByRole("option").filter({ hasText: environment.name }).click();
     await page.getByRole("combobox", { name: "Catalog material", exact: true }).click();
     await page.getByRole("option").filter({ hasText: "PMMA" }).click();
-    const question = `What do NASA sources say about oxygen and fire in microgravity? M6 ${Date.now()}`;
+    const question = process.env.FIRE_SAFETY_LIVE_QUESTION ?? `What do NASA sources say about oxygen and fire in microgravity? M6 ${Date.now()}`;
     await page.getByLabel("Research question", { exact: true }).fill(question);
     const posted = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith("/api/backend/knowledge/queries"));
     await page.getByRole("button", { name: "Ask live Knowledge service" }).click();
@@ -49,17 +55,72 @@ test.describe("live SQL integration", () => {
     expect(response.status()).toBe(201);
     const saved = await response.json();
     expect(saved.status).toBe("Completed");
+    expect(saved.generation.mode).toBe("ProviderInference");
+    expect(saved.generation.provider).toBe("openrouter");
+    expect(typeof saved.generation.model).toBe("string");
+    expect(saved.generation.model.length).toBeGreaterThan(0);
     expect(saved.answer.length).toBeGreaterThan(0);
     expect(saved.question).toBe(question);
     await expect(page.getByLabel("Persisted query ID")).toHaveValue(saved.id);
     await expect(page.getByText(/local citation-matching outcome, not scientific verification/)).toBeVisible();
+    const displayed = page.locator(".cc-protocol .cc-markdown");
+    await expect(displayed).toBeVisible();
+    const answerWords = (saved.answer.match(/[A-Za-z]{5,}/g) ?? []).slice(0, 12);
+    expect(answerWords.length).toBeGreaterThan(0);
+    const displayedText = await displayed.innerText();
+    for (const word of answerWords) expect(displayedText).toContain(word);
     await page.getByRole("button", { name: "Retrieve", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Persisted Knowledge response" })).toBeVisible();
     const retrieved = await (await request.get(`/api/backend/knowledge/queries/${saved.id}`)).json();
     expect(retrieved).toEqual(saved);
+    await expect(page.getByText(`Generation: provider inference reported by Vulcan-X · openrouter · ${saved.generation.model}. Not scientific validation.`, { exact: true })).toBeVisible();
     const origin = new URL(page.url()).origin;
     expect(browserBackendRequests.every((url) => url.startsWith(`${origin}/api/backend/`))).toBe(true);
-    console.log(`LIVE SQL + actual Vulcan-X source-bound (NOT provider inference) queryId=${saved.id}, status=${saved.status}, grounding=${saved.groundingStatus}`);
+    if (process.env.FIRE_SAFETY_LIVE_EVIDENCE_PATH) {
+      await page.screenshot({ path: `${process.env.FIRE_SAFETY_LIVE_EVIDENCE_PATH}.png`, fullPage: true });
+      await writeFile(process.env.FIRE_SAFETY_LIVE_EVIDENCE_PATH, JSON.stringify({ timestamp: new Date().toISOString(), saved, retrieved, displayedText, browserResponses, sameOriginOnly: true, providerFixture: false }, null, 2));
+    }
+    console.log(`LIVE SQL + Vulcan-X reported provider=${saved.generation.provider}, model=${saved.generation.model}, queryId=${saved.id}; not scientific validation`);
+  });
+
+  test("real missing-provider path is persisted and navigable without presenting local text as AI", async ({ page, request }, testInfo) => {
+    test.skip(process.env.FIRE_SAFETY_PROVIDER_UNAVAILABLE !== "1", "Requires actual running Vulcan-X with no provider credentials, not a stopped service.");
+    const environment = (await (await request.get("/api/backend/environments")).json()).find((item: { code: string }) => item.code === "ISS");
+    const network: { path: string; method: string; status: number }[] = [];
+    page.on("response", (response) => { if (response.url().includes("/api/")) network.push({ path: new URL(response.url()).pathname, method: response.request().method(), status: response.status() }); });
+    await page.goto("/dashboard/materials");
+    await expect(page.getByRole("heading", { name: "Live materials catalog" })).toBeVisible();
+    await page.getByRole("button", { name: "View PMMA", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Catalog record details" })).toBeVisible();
+    await page.getByRole("button", { name: "Catalog experiments", exact: true }).click();
+    await page.getByRole("button", { name: /^View Solid Fuel Ignition/ }).click();
+    await expect(page.getByRole("button", { name: /· sources ID/ }).first()).toBeVisible();
+    await page.getByRole("button", { name: /· sources ID/ }).first().click();
+    await expect(page.getByRole("link", { name: "Open catalog source" })).toBeVisible();
+    await page.getByRole("link", { name: "Earth bridge Research translation", exact: true }).click();
+    await page.getByRole("button", { name: "View Combustion Integrated Rack", exact: true }).click();
+    await expect(page.getByText(/Microgravity combustion research · Space/)).toBeVisible();
+    await page.getByRole("link", { name: "Safety playbook Research & review", exact: true }).click();
+    await page.getByRole("button", { name: "Live Knowledge", exact: true }).click();
+    await page.getByRole("combobox", { name: "Catalog environment", exact: true }).click();
+    await page.getByRole("option").filter({ hasText: environment.name }).click();
+    await page.getByLabel("Research question", { exact: true }).fill(`NASA oxygen fire provider unavailable audit ${Date.now()}`);
+    const posted = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith("/api/backend/knowledge/queries"));
+    await page.getByRole("button", { name: "Ask live Knowledge service" }).click();
+    const response = await posted;
+    expect(response.status()).toBe(503);
+    const problem = await response.json();
+    await expect(page.getByLabel("Persisted query ID")).toHaveValue(problem.queryId);
+    await page.getByRole("button", { name: "Retrieve", exact: true }).click();
+    await expect(page.getByText("No persisted answer is available for this query.", { exact: true })).toBeVisible();
+    const saved = await (await request.get(`/api/backend/knowledge/queries/${problem.queryId}`)).json();
+    expect(saved.status).toBe("Failed"); expect(saved.answer).toBeNull();
+    await page.getByRole("button", { name: "Offline Playbook", exact: true }).click();
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.getByRole("button", { name: "Generate outline", exact: true }).click();
+    await expect(page.getByText("Preview complete · engineering review required", { exact: true })).toBeVisible();
+    console.log(`LIVE AUDIT provider unavailable queryId=${problem.queryId}, Failed, answer=null`);
+    await testInfo.attach("live-api-network-no-secrets", { body: JSON.stringify({ network, queryId: problem.queryId, providerInferenceVerified: false }), contentType: "application/json" });
   });
 
   test("scientific fixture gate remains closed in the browser and backend", async ({ page, request }) => {

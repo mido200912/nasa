@@ -13,7 +13,9 @@
 
 This service is a private upstream of ASP.NET Core, not a browser API. It binds to loopback by default (`VULCANX_BIND_HOST=127.0.0.1`). Container deployments must select an explicitly private interface/network; do not publish diagnostics, `/test`, key-status, or key-reset through the frontend/backend allowlist.
 
-Knowledge uses source-bound corpus excerpts and NASA link intelligence, with optional provider synthesis when configured. Generation has a seven-second cancellation budget and falls back to deterministic source-bound content when unavailable; caller cancellation is propagated rather than returned as success. A successful Knowledge response alone is not proof of provider inference or scientific validation. Its `sources` currently contain source URLs; the backend's exact-title matcher may correctly retain these as unmatched/unverified raw labels.
+Genuine direct OpenRouter inference and a browser → Next.js → .NET 8 → Bun → OpenRouter → SQL → browser round-trip were verified on 13 November 2026 using the unchanged configured model. See [actual model, query ID, answer-hash and regression evidence](../Backend/NASA-Project-Back-End/docs/integration/openrouter-inference-verification-2026-11-13.md). Credentials remain owner-managed in the ignored local `.env`, never bundled with this repository.
+
+Knowledge uses locally indexed corpus excerpts and NASA link intelligence as context for OpenRouter synthesis. Generation has a seven-second cancellation budget. **There is no deterministic Knowledge fallback:** missing/exhausted credentials return 503, invalid final output returns 502, and the generation deadline returns 504. Caller cancellation is propagated. A successful response includes the actual returned model identity in `generation`; this is provider-reported provenance, not scientific validation. Its `sources` contain retrieved URLs, not proof that a model cited or verified them. The backend's exact-title matcher retains unmatched URLs as unverified raw labels.
 
 Provider operations accept caller cancellation without rotating keys on cancellation. Per-key attempts are bounded at 40 seconds and the overall provider operation at 55 seconds; the ASP.NET AI budget defaults to 60 seconds and Next.js to 75 seconds. Hazard explanation requests additionally cancel actual provider work after 8 seconds instead of leaving a losing promise running. No numerical simulation formula or scientific validation claim was added by the Milestone 6 changes.
 
@@ -21,7 +23,9 @@ Run `bun install --frozen-lockfile` and `bun test`. Cancellation tests use a con
 
 **Vulcan-X** is an AI-powered combustion data analytics and fire safety engine designed to interpret NASA **Physical Science Informatics (PSI)** combustion experiments (including **BASS, Saffire, ACME, FLEX, and CFI**). 
 
-The platform protects human spaceflight habitats (**ISS, Lunar Bases, Mars Rovers**) and translates microgravity combustion findings into terrestrial dual-use applications for municipal firefighters and high-oxygen facilities.
+This is a research/educational project, **not an operational safety system**. No protection, certified material performance, peer review, or validated numerical model is claimed.
+
+In production (`NODE_ENV=production`), `/test` and key-management endpoints return 404, and the three legacy scientific simulator paths return 422 `HABITAT_FIXTURE_NOT_APPROVED`. They contain unvalidated formulas and must not be used as live scientific results. The separately labeled frontend educational simulator is unaffected. Default backend raw simulator endpoints also share the disabled scientific-submission gate.
 
 ---
 
@@ -31,13 +35,13 @@ The platform protects human spaceflight habitats (**ISS, Lunar Bases, Mars Rover
 vulcan-x/Ai Model/
 ├── src/
 │   ├── config/
-│   │   └── env.ts                     # Environment config & 6-API key slots
+│   │   └── env.ts                     # Server-only configuration & 5 key slots
 │   ├── data/
 │   │   └── official_nasa_corpus.ts    # Source-bound NASA RAG chunks
 │   ├── types/
 │   │   └── index.ts                   # Strict TypeScript schemas & interfaces
 │   ├── services/
-│   │   ├── aiProviderService.ts       # 6-API Key Rotation & Resilient Fallback Engine
+│   │   ├── aiProviderService.ts       # OpenRouter rotation, deadlines & final-output validation
 │   │   ├── ragService.ts              # NASA PSI RAG retrieval & citation pipeline
 │   │   └── physicsSimulatorService.ts # Microgravity combustion stress-test physics
 │   ├── controllers/
@@ -59,14 +63,14 @@ vulcan-x/Ai Model/
 
 ## 🔑 Critical Feature: 5 OpenRouter API Key Rotation & Failover Pool
 
-To guarantee uninterrupted uptime during hackathon evaluations and live demos:
+Provider rotation is best effort; it does not guarantee uptime:
 - The system manages **5 OpenRouter API key slots** (`OPENROUTER_API_KEY_1` through `OPENROUTER_API_KEY_5`).
 - Uses strictly **OpenRouter** (`https://openrouter.ai/api/v1`) with recommended headers (`HTTP-Referer`, `X-Title`).
 - **Automatic Failover:** When an active OpenRouter key triggers **HTTP 429 (Rate Limit)**, **Quota/Credits Exhaustion (402/403)**, or network timeout:
   1. The key is flagged and temporarily cooled down.
   2. The service seamlessly rotates to the next OpenRouter key in the pool.
-  3. The request completes without client-facing disruption.
-- **Offline / Zero-Crash Fallback:** If all 5 keys are exhausted or unset, the engine activates a **NASA-PSI Deterministic Scientific Engine** that synthesizes grounded facts directly from the onboard NASA PSI repository with zero hallucination.
+   3. If no usable provider remains, Knowledge returns a safe error, not a fake successful answer.
+- No zero-hallucination or scientific-validation guarantee is made.
 
 ---
 
@@ -89,19 +93,19 @@ Queries source-bound official NASA excerpts. Each retrieved chunk includes `text
   ```json
   {
     "success": true,
-    "answer": "Under NASA exploration atmospheres (34% O2 at 8.2 psi)...",
-    "sources": [
-      "Saffire (Urban, D., Ruff, G. A., et al)",
-      "BASS (Ferkul, P. V., & T'ien, J. S)"
-    ],
-    "risk_level": "High"
+    "answer": "<actual final provider text; not a captured response>",
+    "sources": [],
+    "retrieved_chunks": [],
+    "emergency_playbook": [],
+    "risk_level": "Low",
+    "generation": { "mode": "ProviderInference", "provider": "openrouter", "model": "<actual provider-returned model ID>" }
   }
   ```
 
 ---
 
 ### 2. Habitat Simulation & Stress-Test
-Evaluates combustion acceleration and material safety against NASA-STD-6001B.
+Legacy development-only formula experiment. **Not validated against NASA-STD-6001B.** Production responds 422 before computation; do not enable live scientific submission without approved inputs and a validated adapter.
 
 - **Route:** `POST /api/v1/simulator/stress-test`
 - **Request Body:**
@@ -122,7 +126,7 @@ Evaluates combustion acceleration and material safety against NASA-STD-6001B.
     "simulation_result": {
       "ignition_speed_multiplier": 2.68,
       "safety_status": "Critical",
-      "recommendation": "CRITICAL COMBUSTION HAZARD in Lunar Base: Flame spread multiplier is elevated to 2.68x under 30% O2 at 10.2 psi. Material 'PMMA Acrylic' exceeds NASA-STD-6001 Test 1 safety threshold. Protocol: Replace with Kapton/Nomex and interlock cabin ventilation to shutdown within 5s."
+      "recommendation": "<legacy development-only illustrative output; not an operational procedure>"
     }
   }
   ```
@@ -130,20 +134,20 @@ Evaluates combustion acceleration and material safety against NASA-STD-6001B.
 ---
 
 ### 3. Key Rotation Pool Diagnostics
-Inspect the health and rotation status of all 6 API key slots in real-time.
+Development-only status for five key slots. Hidden in production and never proxied to the browser.
 
 - **Route:** `GET /api/v1/ai/key-status`
 - **Response:**
   ```json
   {
     "success": true,
-    "totalKeys": 6,
+    "totalKeys": 5,
     "activeKeyIndex": 1,
     "keys": [
       {
         "index": 1,
-        "provider": "groq",
-        "maskedKey": "gsk_...9a1b",
+        "provider": "openrouter",
+        "maskedKey": "NOT_CONFIGURED",
         "status": "ACTIVE",
         "failCount": 0,
         "successCount": 14
@@ -169,7 +173,7 @@ bun install
 ```
 
 ### 2. Configure Environment Keys
-Copy `.env.example` to `.env` and insert your API keys (e.g., Groq, Gemini, OpenAI):
+Copy `.env.example` to ignored `.env` and configure an authorized OpenRouter key (`OPENROUTER_API_KEY` or `OPENROUTER_API_KEY_1`…`_5`) and `OPENROUTER_MODEL`. No credentials are bundled. The configured default model is not evidence that it was invoked.
 ```bash
 cp .env.example .env
 ```
@@ -184,4 +188,4 @@ The server will start on `http://localhost:4000`.
 ```bash
 bun test
 ```
-All tests run with native Bun speed (`< 250ms`).
+API contract tests inject a technical provider fixture; cancellation/error tests use controlled transport. None is live inference evidence. Current cross-service results and remaining external gates: [integration audit](../Backend/NASA-Project-Back-End/docs/integration/integration-audit-2026-11-13.md).

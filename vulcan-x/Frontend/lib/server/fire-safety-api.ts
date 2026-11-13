@@ -1,9 +1,12 @@
 import "server-only";
 import { env } from "node:process";
+import { randomUUID } from "node:crypto";
+import { trustedClientIp } from "@/lib/server/trusted-client-ip";
 
 const responseLimitBytes = 1024 * 1024;
 
 const allowedBackendPaths = [
+  /^\/health\/ready$/,
   /^\/api\/environments$/,
   /^\/api\/materials(?:\/\d+)?$/,
   /^\/api\/experiments(?:\/\d+)?$/,
@@ -42,7 +45,13 @@ export async function proxyFireSafetyApi(request: Request, proxyRequest: Backend
   }
 
   try {
-    const headers = new Headers({ Accept: "application/json" });
+    const headers = new Headers({ Accept: "application/json", "X-Correlation-ID": randomUUID() });
+    const ip = trustedClientIp(request.headers);
+    if (ip) {
+      headers.set("X-Forwarded-For", ip);
+      const scheme = request.headers.get("x-forwarded-proto");
+      if (scheme === "http" || scheme === "https") headers.set("X-Forwarded-Proto", scheme);
+    }
     let body: string | undefined;
     if (proxyRequest.method === "POST") {
       headers.set("Content-Type", "application/json");
@@ -55,7 +64,7 @@ export async function proxyFireSafetyApi(request: Request, proxyRequest: Backend
       body,
       cache: "no-store",
       redirect: "error",
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(proxyTimeoutMs)]),
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(proxyRequest.path === "/health/ready" ? 10000 : proxyTimeoutMs)]),
     });
     return await translateResponse(response);
   } catch (cause) {
@@ -115,14 +124,14 @@ async function translateResponse(upstream: Response): Promise<Response> {
     if (!text) return new Response(null, { status: upstream.status, headers: noStoreHeaders() });
     const json = parseJson(text);
     if (json === undefined) return problem(502, "Backend returned an invalid response", "The backend response could not be processed.", "BACKEND_INVALID_RESPONSE");
-    return Response.json(json, { status: upstream.status, headers: noStoreHeaders() });
+    return Response.json(json, { status: upstream.status, headers: responseHeaders(upstream) });
   }
 
   const json = parseJson(text);
   if (isProblemDetails(json)) {
     return Response.json(safeProblemDetails(json), {
       status: upstream.status,
-      headers: { ...noStoreHeaders(), "Content-Type": "application/problem+json; charset=utf-8" },
+      headers: { ...responseHeaders(upstream), "Content-Type": "application/problem+json; charset=utf-8" },
     });
   }
   return problem(upstream.status, "Backend request failed", "The application backend returned an unexpected error response.", "BACKEND_INVALID_ERROR_RESPONSE");
@@ -183,4 +192,12 @@ function problem(status: number, title: string, detail: string, errorCode: strin
 
 function noStoreHeaders(): HeadersInit {
   return { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
+}
+function responseHeaders(response: Response): Record<string, string> {
+  const headers = noStoreHeaders() as Record<string, string>;
+  const correlation = response.headers.get("x-correlation-id");
+  if (correlation && /^[0-9a-f-]{36}$/i.test(correlation)) headers["X-Correlation-ID"] = correlation;
+  const retry = response.headers.get("retry-after");
+  if (retry && /^\d{1,5}$/.test(retry)) headers["Retry-After"] = retry;
+  return headers;
 }

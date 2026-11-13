@@ -15,6 +15,8 @@ public sealed class LiveProxyFactAttribute : FactAttribute
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FIRE_SAFETY_LIVE_PROXY_URL")))
             Skip = "Requires dedicated SQL + real Next.js/ASP.NET processes and controlled upstream harness.";
+        else if (Environment.GetEnvironmentVariable("FIRE_SAFETY_TIMING_FIXTURE") != "1" && Environment.GetEnvironmentVariable("FIRE_SAFETY_LIVE_PROVIDER") != "1")
+            Skip = "Explicit timing-fixture mode or configured genuine-provider mode required; local retrieval is not inference.";
     }
 }
 
@@ -78,7 +80,7 @@ public sealed class LiveProxyCancellationTests(ITestOutputHelper output)
     }
 
     [LiveProxyFact]
-    public async Task ValidSourceBoundResponseLongerThanTenSecondsSurvivesProxy()
+    public async Task ExplicitUpstreamResponseLongerThanTenSecondsSurvivesProxy()
     {
         await using var db = Database();
         var id = await db.SpaceEnvironments.Where(x => x.Code == "ISS").Select(x => x.Id).SingleAsync();
@@ -88,7 +90,9 @@ public sealed class LiveProxyCancellationTests(ITestOutputHelper output)
         var result = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
         var queryId = result.GetProperty("id").GetGuid();
         Assert.Equal(AnalysisStatus.Completed, (await db.KnowledgeQueries.AsNoTracking().SingleAsync(x => x.Id == queryId)).Status);
-        output.WriteLine($"LIVE TCP 11-second controlled delay + actual source-bound Vulcan-X SQL queryId={queryId}");
+        var fixture = Environment.GetEnvironmentVariable("FIRE_SAFETY_TIMING_FIXTURE") == "1";
+        Assert.Equal(fixture ? "Unspecified" : "ProviderInference", result.GetProperty("generation").GetProperty("mode").GetString());
+        output.WriteLine($"LIVE TCP 11-second controlled delay SQL queryId={queryId}, timingFixture={fixture}; not proof of live inference");
     }
 
     [LiveProxyFact]

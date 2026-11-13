@@ -153,7 +153,25 @@ function optionalNumber(value: string): number | null {
 function isPositiveInteger(value: unknown): value is number { return typeof value === "number" && Number.isSafeInteger(value) && value > 0; }
 function isGuid(value: string): boolean { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value); }
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
-function isProblemDetails(value: unknown): value is ProblemDetails { return isRecord(value) && typeof value.status === "number" && typeof value.title === "string"; }
+function nullableText(value: unknown): value is string | null { return value === null || typeof value === "string"; }
+function nullableNumber(value: unknown): value is number | null { return value === null || (typeof value === "number" && Number.isFinite(value)); }
+function isProblemDetails(value: unknown): value is ProblemDetails {
+  return isRecord(value) && typeof value.status === "number" && typeof value.title === "string"
+    && ["detail", "errorCode", "traceId", "analysisId"].every((key) => value[key] === undefined || typeof value[key] === "string")
+    && (value.errors === undefined || (isRecord(value.errors) && Object.values(value.errors).every((messages) => Array.isArray(messages) && messages.every((item) => typeof item === "string"))));
+}
+function catalogReference(value: unknown): boolean { return isRecord(value) && isPositiveInteger(value.id) && typeof value.code === "string" && typeof value.name === "string"; }
+function inputValue(value: unknown): boolean { return isRecord(value) && nullableNumber(value.value) && typeof value.origin === "string" && nullableText(value.measurementBasis); }
 function isHabitatAnalysis(value: unknown): value is HabitatAnalysis {
-  return isRecord(value) && typeof value.id === "string" && typeof value.status === "string" && isRecord(value.environment) && isPositiveInteger(value.environment.id) && isRecord(value.material) && isPositiveInteger(value.material.id) && isRecord(value.inputs) && typeof value.disclaimer === "string";
+  return isRecord(value) && typeof value.id === "string" && typeof value.status === "string" && typeof value.requestedAt === "string"
+    && catalogReference(value.environment) && catalogReference(value.material) && isRecord(value.inputs)
+    && inputValue(value.inputs.oxygenVolumePercent) && inputValue(value.inputs.pressureKPa) && inputValue(value.inputs.temperatureCelsius)
+    && isRecord(value.inputs.gravity) && nullableText(value.inputs.gravity.regime) && nullableNumber(value.inputs.gravity.effectiveGravityG) && typeof value.inputs.gravity.origin === "string"
+    && (value.error === null || (isRecord(value.error) && nullableText(value.error.code) && nullableText(value.error.message)))
+    && (value.result === null || (isRecord(value.result) && nullableText(value.result.analysisBasis) && nullableText(value.result.riskLabel) && nullableText(value.result.explanation) && nullableText(value.result.limitations)
+      && typeof value.result.isMock === "boolean" && typeof value.result.isScientificallyValidated === "boolean"
+      && Array.isArray(value.result.factors) && value.result.factors.every((factor) => isRecord(factor) && typeof factor.name === "string" && nullableText(factor.description) && nullableText(factor.direction))
+      && Array.isArray(value.result.citations) && value.result.citations.every((citation) => isRecord(citation) && typeof citation.matchStatus === "string" && nullableText(citation.rawTitle) && nullableText(citation.rawUrl) && nullableText(citation.excerpt)
+        && (citation.source === null || (isRecord(citation.source) && isPositiveInteger(citation.source.id) && typeof citation.source.title === "string" && nullableText(citation.source.doi) && nullableText(citation.source.url))))))
+    && typeof value.disclaimer === "string";
 }

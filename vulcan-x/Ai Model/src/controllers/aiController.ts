@@ -2,9 +2,10 @@ import type { Context } from 'hono';
 import { z } from 'zod';
 import type { RagService } from '../services/ragService';
 import type { AiProviderService } from '../services/aiProviderService';
+import { ProviderUnavailableError, ProviderResponseError } from '../services/providerErrors';
 
 const AiQuerySchema = z.object({
-  question: z.string().min(1, 'Question cannot be empty'),
+  question: z.string().trim().min(3, 'Question must contain at least three characters').max(2000),
   environment: z.enum(['lunar_base', 'mars_rover', 'iss', 'earth']),
 });
 
@@ -49,7 +50,10 @@ export class AiController {
       const response = await this.ragService.query(parseResult.data, c.req.raw.signal);
       return c.json(response, 200);
     } catch (err: any) {
-      if (c.req.raw.signal.aborted) return c.json({ success: false, error: 'Request cancelled' }, 499);
+      if (c.req.raw.signal.aborted) return Response.json({ success: false, error: 'Request cancelled' }, { status: 499 });
+      if (err instanceof ProviderUnavailableError) return c.json({ success: false, error: err.message, errorCode: 'PROVIDER_UNAVAILABLE' }, 503);
+      if (err instanceof ProviderResponseError) return c.json({ success: false, error: err.message, errorCode: 'PROVIDER_INVALID_RESPONSE' }, 502);
+      if (err instanceof DOMException && err.name === 'TimeoutError') return c.json({ success: false, error: 'Provider request timed out.', errorCode: 'PROVIDER_TIMEOUT' }, 504);
       console.error('[AiController] Query processing failed');
       return c.json(
         {
@@ -79,12 +83,11 @@ export class AiController {
         200
       );
     } catch (err: any) {
-      console.error('[AiController] Error retrieving link intelligence:', err);
+      console.error('[AiController] Link intelligence request failed');
       return c.json(
         {
           success: false,
           error: 'An internal error occurred while inspecting links',
-          message: err?.message || 'Unknown error',
         },
         500
       );

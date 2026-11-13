@@ -1,11 +1,15 @@
 # 📡 Vulcan-X API Documentation
 
+> Genuine provider inference was subsequently verified end-to-end on 13 November 2026; see [execution evidence](../Backend/NASA-Project-Back-End/docs/integration/openrouter-inference-verification-2026-11-13.md). The earlier “not verified” statement below describes the audit before credentials were supplied. Scientific/deployment gates remain unchanged.
+
+> **Current integration contract — 13 November 2026:** This document's legacy simulator examples/formulas below are development-only and unvalidated, not scientific measurements, approved protocols, or captured provider responses. In production `/test` and key-status/reset are hidden (404); all legacy simulator POST paths are gated (422 `HABITAT_FIXTURE_NOT_APPROVED`). Knowledge now requires real provider synthesis, returns safe 503/502/504 failures without local-text fallback, and reports `generation: { mode: "ProviderInference", provider: "openrouter", model: "<actual returned model>" }`. No genuine inference was verified in this environment. See the [current audit](../Backend/NASA-Project-Back-End/docs/integration/integration-audit-2026-11-13.md) and [README](README.md) before using these historical examples.
+
 > **NASA Space Apps Challenge 2026** — *"Flame in Freefall: AI-Powered Fire Safety Insights"*
 
 **Base URL:** `http://localhost:4000`  
 **Runtime:** Bun + Hono (TypeScript)  
 **AI Provider:** OpenRouter (5-Key Rotation Pool)  
-**Model:** `nvidia/nemotron-3.5-lightning:free`
+**Model:** `OPENROUTER_MODEL` / per-slot configuration; no model execution verified here.
 
 ---
 
@@ -42,7 +46,7 @@ The system orchestrates a pool of **5 OpenRouter API keys** with transparent rot
 2. **Automatic Failover:** On HTTP `429` (Rate Limited) or `402/403` (Quota/Credit Limit), the slot enters a 60-second cooldown (`KEY_COOLDOWN_MS`), and the request automatically shifts to the next standby slot without failing client requests.
 3. **Transient Error Handling:** On unexpected provider errors, the slot enters a 15-second quick retry cooldown.
 4. **State Recovery:** When an API key succeeds, its `failCount` resets to 0 and other unblocked keys return to `STANDBY`.
-5. **Resilient Zero-Hallucination Fallback:** If all 5 external API slots are exhausted or rate-limited simultaneously, the system activates the offline **NASA-PSI Deterministic Scientific Engine**, guaranteeing high availability.
+5. **Explicit failure:** If all external slots are unavailable, Knowledge fails safely with 503. Local retrieval is not substituted for inference. No hallucination/availability guarantee is made.
 
 ---
 

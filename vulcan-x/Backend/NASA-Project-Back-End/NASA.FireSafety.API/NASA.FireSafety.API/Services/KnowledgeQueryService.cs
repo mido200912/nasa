@@ -11,7 +11,7 @@ using VulcanX.Infrastructure.ExternalServices.VulcanXAI.Contracts.Requests;
 
 namespace NASA.FireSafety.API.Services;
 
-public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcanXAiClient aiClient) : IKnowledgeQueryService
+public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcanXAiClient aiClient, ILogger<KnowledgeQueryService>? logger = null) : IKnowledgeQueryService
 {
     public async Task<KnowledgeQueryResponseDto> CreateAsync(CreateKnowledgeQueryRequest request, CancellationToken cancellationToken)
     {
@@ -33,9 +33,15 @@ public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcan
             await dbContext.SaveChangesAsync(cancellationToken);
             var ai = await aiClient.QueryAsync(new AiQueryRequest { Question = query.Question, Environment = aiEnvironment }, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            if (!ai.Success || string.IsNullOrWhiteSpace(ai.Answer)) throw new VulcanXServiceException(VulcanXFailureKind.InvalidResponse, "The AI service returned an unsuccessful knowledge response.");
+            if (!ai.Success || string.IsNullOrWhiteSpace(ai.Answer) || ai.Sources is null
+                || (ai.Generation is not null && (ai.Generation.Mode != "ProviderInference" || ai.Generation.Provider != "openrouter" || string.IsNullOrWhiteSpace(ai.Generation.Model) || ai.Generation.Model.Length > 100)))
+                throw new VulcanXServiceException(VulcanXFailureKind.InvalidResponse, "The AI service returned an unsuccessful knowledge response.");
 
             query.Answer = ai.Answer;
+            // Existing columns retain provenance without a new schema/migration.
+            query.ModelName = ai.Generation?.Model;
+            query.ModelVersion = ai.Generation?.Provider;
+            query.ContractVersion = ai.Generation is null ? null : "knowledge-inference/1";
             query.Status = AnalysisStatus.Completed;
             query.CompletedAt = DateTime.UtcNow;
             query.DurationMs = (int)stopwatch.ElapsedMilliseconds;
@@ -52,6 +58,8 @@ public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcan
             }
             query.GroundingStatus = query.Citations.Count == 0 ? KnowledgeGroundingStatus.NoCitations : query.Citations.Any(x => x.MatchStatus == CitationMatchStatus.Matched) ? KnowledgeGroundingStatus.HasMatchedCitations : KnowledgeGroundingStatus.HasOnlyUnmatchedCitations;
             await dbContext.SaveChangesAsync(cancellationToken);
+            Middleware.Operations.Knowledge.Add(1, new KeyValuePair<string, object?>("status", "Completed"));
+            logger?.LogInformation("Knowledge terminal {QueryId} {Status} {DurationMs}", query.Id, "Completed", query.DurationMs);
             return ToDto(query);
         }
         catch (VulcanXServiceException exception)
@@ -84,6 +92,8 @@ public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcan
         saved.CompletedAt = DateTime.UtcNow;
         saved.DurationMs = duration;
         await dbContext.SaveChangesAsync(cleanup.Token);
+        Middleware.Operations.Knowledge.Add(1, new KeyValuePair<string, object?>("status", "Failed"));
+        logger?.LogWarning("Knowledge terminal {QueryId} {Status} {Category}", id, "Failed", code);
     }
 
     public async Task<KnowledgeQueryResponseDto?> GetAsync(Guid id, CancellationToken cancellationToken)
@@ -95,7 +105,10 @@ public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcan
     private static KnowledgeQueryResponseDto ToDto(KnowledgeQuery query) => new(query.Id, query.Status.ToString(), query.Question, query.Answer, query.GroundingStatus?.ToString(), query.IsMock,
         query.Citations.OrderBy(x => x.SortOrder).Select(x => new KnowledgeCitationDto(x.MatchStatus.ToString(), x.ResearchSource is null ? null : new SourceReferenceDto(x.ResearchSource.Id, x.ResearchSource.Title, x.ResearchSource.DoiNormalized, x.ResearchSource.SourceUrl), x.RawTitle, x.RawUrl, x.Excerpt, x.RelevanceScore)).ToList(),
         query.Status == AnalysisStatus.Failed ? new KnowledgeErrorDto(query.ErrorCode, query.ErrorMessage) : null,
-        "AI-generated answer; verify cited sources.");
+        "AI output is not scientific validation. Verify cited sources and generation provenance.",
+        query.ContractVersion == "knowledge-inference/1"
+            ? new KnowledgeGenerationDto("ProviderInference", query.ModelVersion, query.ModelName)
+            : new KnowledgeGenerationDto("Unspecified", null, null));
     private static string? MapEnvironment(string code) => code.ToUpperInvariant() switch { "ISS" => "iss", "LUNAR_HABITAT" => "lunar_base", "MARS_HABITAT" => "mars_rover", _ => null };
     private static string FailureCode(VulcanXFailureKind kind) => kind switch { VulcanXFailureKind.Timeout => "VULCANX_TIMEOUT", VulcanXFailureKind.InvalidResponse => "VULCANX_INVALID_RESPONSE", VulcanXFailureKind.UpstreamFailure => "VULCANX_UPSTREAM_FAILURE", _ => "VULCANX_UNAVAILABLE" };
 }

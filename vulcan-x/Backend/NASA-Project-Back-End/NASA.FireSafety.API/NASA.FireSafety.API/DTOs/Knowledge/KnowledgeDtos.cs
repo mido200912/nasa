@@ -14,6 +14,7 @@ public sealed class CreateKnowledgeQueryRequest
     [MaxLength(10)] public string? Language { get; init; }
 }
 
-public sealed record KnowledgeQueryResponseDto(Guid Id, string Status, string Question, string? Answer, string? GroundingStatus, bool IsMock, IReadOnlyList<KnowledgeCitationDto> Citations, KnowledgeErrorDto? Error, string Disclaimer);
+public sealed record KnowledgeQueryResponseDto(Guid Id, string Status, string Question, string? Answer, string? GroundingStatus, bool IsMock, IReadOnlyList<KnowledgeCitationDto> Citations, KnowledgeErrorDto? Error, string Disclaimer, KnowledgeGenerationDto? Generation = null);
+public sealed record KnowledgeGenerationDto(string Mode, string? Provider, string? Model);
 public sealed record KnowledgeCitationDto(string MatchStatus, SourceReferenceDto? Source, string? RawTitle, string? RawUrl, string? Excerpt, decimal? RelevanceScore);
 public sealed record KnowledgeErrorDto(string? Code, string? Message);

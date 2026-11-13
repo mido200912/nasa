@@ -71,10 +71,30 @@ public sealed class VulcanXAiClientTests
         Assert.NotEmpty(results);
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.GatewayTimeout, VulcanXFailureKind.Timeout)]
+    [InlineData(HttpStatusCode.BadGateway, VulcanXFailureKind.InvalidResponse)]
+    [InlineData(HttpStatusCode.ServiceUnavailable, VulcanXFailureKind.Unavailable)]
+    public async Task ProviderHttpFailuresPreserveSafeFailureKind(HttpStatusCode status, VulcanXFailureKind expected)
+    {
+        var client = CreateClient(new StubHandler(_ => Task.FromResult(Json(status, "{\"error\":\"private-provider-detail\"}"))));
+        var error = await Assert.ThrowsAsync<VulcanXServiceException>(() => client.QueryAsync(new AiQueryRequest { Question = "Test provider failure", Environment = "iss" }, CancellationToken.None));
+        Assert.Equal(expected, error.Kind);
+        Assert.DoesNotContain("private", error.Message);
+    }
+
     private static VulcanXAiClient CreateClient(HttpMessageHandler handler) => new(
         new HttpClient(handler),
         Options.Create(new VulcanXOptions { BaseUrl = "http://vulcan-x.test/", TimeoutSeconds = 10 }),
         NullLogger<VulcanXAiClient>.Instance);
+
+    [Fact]
+    public async Task OversizedUpstreamResponseIsRejectedBeforeDeserialization()
+    {
+        var client = CreateClient(new StubHandler(_ => Task.FromResult(Json(HttpStatusCode.OK, new string('x', 1024 * 1024 + 1)))));
+        var exception = await Assert.ThrowsAsync<VulcanXServiceException>(() => client.GetDatasetsAsync(CancellationToken.None));
+        Assert.Equal(VulcanXFailureKind.InvalidResponse, exception.Kind);
+    }
 
     private static HttpResponseMessage Json(HttpStatusCode status, string content) => new(status)
     {

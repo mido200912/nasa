@@ -1,5 +1,6 @@
 import { env, type ApiKeySlotConfig } from '../config/env';
 import type { KeyPoolStatus, KeySlotInfo, KeyStatus } from '../types';
+import { ProviderResponseError, ProviderUnavailableError } from './providerErrors';
 
 interface InternalKeySlot {
   config: ApiKeySlotConfig;
@@ -44,9 +45,10 @@ export class AiProviderService {
     systemPrompt: string = 'You are the Vulcan-X NASA Space Apps AI combustion safety expert.',
     signal?: AbortSignal
   ): Promise<{ text: string; keyUsed: number; provider: string; model: string }> {
-    const operation = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(55_000)]);
+    const operation = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(env.PROVIDER_TIMEOUT_MS)]);
     const totalSlots = this.slots.length;
     let attempts = 0;
+    let lastFailure: unknown;
 
     while (attempts < totalSlots) {
       operation.throwIfAborted();
@@ -82,6 +84,7 @@ export class AiProviderService {
           `[AiProviderService] Requesting OpenRouter via Key Slot #${slot.config.index} (Model: ${slot.config.model})...`
         );
         const result = await this.callOpenRouterApi(slot, userPrompt, systemPrompt, operation);
+        operation.throwIfAborted();
 
         // Success! Reset error state completely
         slot.successCount++;
@@ -104,13 +107,14 @@ export class AiProviderService {
         }
 
         return {
-          text: result,
+          text: result.text,
           keyUsed: slot.config.index,
           provider: 'openrouter',
-          model: slot.config.model,
+          model: result.model,
         };
       } catch (err: any) {
         operation.throwIfAborted(); // Cancellation must not consume another key or return fallback success.
+        lastFailure = err;
         const errorMessage = err?.message || String(err);
         const isRateLimit = errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit');
         const isQuota =
@@ -142,7 +146,8 @@ export class AiProviderService {
 
     // Never manufacture an offline scientific answer. Callers retain their own
     // explicitly sourced response or report that generation is unavailable.
-    throw new Error('All OpenRouter API keys are unavailable; no unsourced fallback response was generated.');
+    if (lastFailure instanceof ProviderResponseError) throw lastFailure;
+    throw new ProviderUnavailableError();
   }
 
   /**
@@ -153,8 +158,9 @@ export class AiProviderService {
     userPrompt: string,
     systemPrompt: string,
     signal: AbortSignal
-  ): Promise<string> {
+  ): Promise<{ text: string; model: string }> {
     const url = `${slot.config.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+    const attemptStarted = performance.now();
 
     try {
       const response = await fetch(url, {
@@ -172,9 +178,10 @@ export class AiProviderService {
             { role: 'user', content: userPrompt },
           ],
           temperature: 0.2, // Low temperature for scientific precision & zero hallucination
-          max_tokens: 2500,
+          max_tokens: env.MAX_OUTPUT_TOKENS,
         }),
-        signal: AbortSignal.any([signal, AbortSignal.timeout(40_000)]),
+        signal: AbortSignal.any([signal, AbortSignal.timeout(env.PROVIDER_ATTEMPT_TIMEOUT_MS)]),
+        redirect: 'error',
       });
 
 
@@ -182,25 +189,44 @@ export class AiProviderService {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const data = (await response.json()) as any;
+      const reader = response.body?.getReader();
+      if (!reader) throw new ProviderResponseError();
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          size += value.byteLength;
+          if (size > 1024 * 1024) { await reader.cancel(); throw new ProviderResponseError(); }
+          chunks.push(value);
+        }
+      } finally { reader.releaseLock(); }
+      const bytes = new Uint8Array(size);
+      let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+      let data: any;
+      try { data = JSON.parse(new TextDecoder().decode(bytes)); } catch { throw new ProviderResponseError(); }
       if (data?.error) {
         throw new Error('Provider returned an unsuccessful response');
       }
       const choice = data?.choices?.[0];
       const message = choice?.message;
-      let content = message?.content || choice?.text;
-
-      // Support reasoning models where output might be in message.reasoning
-      if (!content && message?.reasoning) {
-        content = message.reasoning;
-      }
-
-      if (!content) {
-        throw new Error('Provider returned empty content');
-      }
-
-      return content.trim();
+      const content = message?.content;
+      // Reasoning is not a final answer. Neither malformed nor truncated output
+      // is substituted with local text and called successful inference.
+      if (typeof content !== 'string' || !content.trim() || content.length > 100_000
+        || (choice.finish_reason && choice.finish_reason !== 'stop')
+        || typeof data.model !== 'string' || !data.model.trim() || data.model.length > 100) throw new ProviderResponseError();
+      console.log(JSON.stringify({ event: 'provider_completed', provider: 'openrouter', durationMs: Math.round(performance.now() - attemptStarted) }));
+      return { text: content.trim(), model: data.model };
     } catch (err: any) {
+      const message = typeof err?.message === 'string' ? err.message : '';
+      console.warn(JSON.stringify({
+        event: 'provider_failed', provider: 'openrouter',
+        category: signal.aborted ? 'cancelled_or_deadline' : /429|402|403/.test(message) ? 'quota_or_rate_limit' : err instanceof ProviderResponseError ? 'invalid_response' : 'unavailable',
+        durationMs: Math.round(performance.now() - attemptStarted),
+      }));
       throw err;
     }
   }
@@ -230,12 +256,7 @@ export class AiProviderService {
   public getKeyPoolStatus(): KeyPoolStatus {
     const keys: KeySlotInfo[] = this.slots.map((slot) => {
       const rawKey = slot.config.key;
-      const maskedKey =
-        rawKey && rawKey.length > 8
-          ? `${rawKey.slice(0, 7)}...${rawKey.slice(-4)}`
-          : rawKey
-          ? '***'
-          : 'NOT_CONFIGURED';
+      const maskedKey = rawKey ? 'CONFIGURED' : 'NOT_CONFIGURED';
 
       return {
         index: slot.config.index,

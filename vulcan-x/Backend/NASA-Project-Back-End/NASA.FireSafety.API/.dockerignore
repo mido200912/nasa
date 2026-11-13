@@ -1,0 +1,10 @@
+**
+!NASA.FireSafety.API/
+!NASA.FireSafety.API/**
+**/bin
+**/obj
+**/.vs
+**/.env*
+**/*.user
+**/*.log
+**/*secret*

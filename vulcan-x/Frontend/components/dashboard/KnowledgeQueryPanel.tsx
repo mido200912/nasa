@@ -65,7 +65,7 @@ export function KnowledgeQueryPanel({ environmentId, materialId }: { environment
     setOutcome({ problem: { status: 499, title: "Request cancelled", detail: "Cancellation does not delete a query already saved by the backend. A new submission may create another record; retrieve its ID if known.", errorCode: "REQUEST_CANCELLED" } });
   }
 
-  return <div className="cc-playbook-grid"><section className="cc-panel cc-console"><div className="cc-panel-heading"><div><h2>Live Knowledge query</h2><p className="cc-caption">Persisted AI response through the application backend.</p></div><span className="cc-tag">AI-generated</span></div>
+  return <div className="cc-playbook-grid"><section className="cc-panel cc-console"><div className="cc-panel-heading"><div><h2>Live Knowledge query</h2><p className="cc-caption">Persisted backend workflow. Provider availability and response provenance are reported, not assumed.</p></div><span className="cc-tag">Live service</span></div>
     <EnvironmentSelect id="knowledge-environment" compact showIllustrative={false} />
     <MaterialSelect id="knowledge-material" showIllustrative={false} />
     <form onSubmit={submit}><label htmlFor="knowledge-question">Research question</label><textarea id="knowledge-question" maxLength={2000} rows={5} value={inputs.question} disabled={loading} onChange={(event) => setInputs((current) => ({ ...current, question: event.target.value }))} aria-describedby="knowledge-note" />{errors.question ? <FieldError value={errors.question} /> : null}
@@ -87,6 +87,9 @@ function KnowledgeResult({ outcome, loading }: { outcome: KnowledgeOutcome | nul
 export function KnowledgeQueryResult({ query }: { query: KnowledgeQuery }) {
   return <section className="cc-panel cc-protocol" aria-live="polite"><div className="cc-panel-heading"><div><h2>Persisted Knowledge response</h2><p className="cc-caption">Query ID: {query.id}</p></div><span className="cc-tag">{query.status}</span></div>
     {query.isMock ? <p className="cc-caption">Mock response — not a live AI result or scientific validation.</p> : null}
+    <p className="cc-caption">{query.generation?.mode === "ProviderInference"
+      ? `Generation: provider inference reported by Vulcan-X · ${query.generation.provider} · ${query.generation.model}. Not scientific validation.`
+      : "Generation: unspecified or historical. This saved answer is not evidence of verified LLM inference."}</p>
     <p className="cc-caption">Question: {query.question}</p>{query.error ? <div className="cc-error" role="alert"><p>{query.error.message ?? "The persisted query failed."}</p><p className="cc-caption">{query.error.code ?? "No backend error code supplied."}</p></div> : null}
     {query.answer ? <div className="cc-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>{query.answer}</ReactMarkdown></div> : <p className="cc-empty">No persisted answer is available for this query.</p>}
     <h3>Grounding status</h3><p>{groundingText(query.groundingStatus)}</p><p className="cc-caption">This is a local citation-matching outcome, not scientific verification.</p>
