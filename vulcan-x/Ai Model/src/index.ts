@@ -9,7 +9,7 @@ import { PhysicsEngineService } from './services/physicsEngineService';
 import { AiController } from './controllers/aiController';
 import { SimulatorController } from './controllers/simulatorController';
 import { createMainRouter } from './routes';
-import { NASA_PSI_KNOWLEDGE_BASE } from './data/nasa_psi_knowledge_base';
+import { OFFICIAL_NASA_CORPUS } from './data/official_nasa_corpus';
 
 const app = new Hono();
 
@@ -44,7 +44,7 @@ console.log('🚀 VULCAN-X: AI Combustion Engine & Space Safety Backend');
 console.log('🏆 2026 NASA Space Apps Challenge: "Flame in Freefall"');
 console.log('================================================================');
 console.log(`📡 Server running on: http://localhost:${env.PORT}`);
-console.log(`📚 NASA PSI Datasets loaded: ${NASA_PSI_KNOWLEDGE_BASE.length} investigations`);
+console.log(`📚 Official NASA source chunks loaded: ${OFFICIAL_NASA_CORPUS.length}`);
 console.log(`🔑 5 OpenRouter API Key Rotation Pool: Active`);
 console.log('----------------------------------------------------------------');
 console.log(`• Knowledge & RAG Query : POST http://localhost:${env.PORT}/api/v1/ai/query`);

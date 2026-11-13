@@ -23,7 +23,7 @@ vulcan-x/Ai Model/
 │   ├── config/
 │   │   └── env.ts                     # Environment config & 6-API key slots
 │   ├── data/
-│   │   └── nasa_psi_knowledge_base.ts # NASA PSI investigations dataset
+│   │   └── official_nasa_corpus.ts    # Source-bound NASA RAG chunks
 │   ├── types/
 │   │   └── index.ts                   # Strict TypeScript schemas & interfaces
 │   ├── services/
@@ -63,7 +63,7 @@ To guarantee uninterrupted uptime during hackathon evaluations and live demos:
 ## 📡 REST API Documentation
 
 ### 1. Knowledge & RAG Query
-Queries NASA PSI combustion data with scientific citations and risk analysis.
+Queries source-bound official NASA excerpts. Each retrieved chunk includes `text_content`, `source_url`, `citation_title`, and `category`; unsupported questions explicitly abstain instead of using a generated fallback.
 
 - **Route:** `POST /api/v1/ai/query`
 - **Request Body:**

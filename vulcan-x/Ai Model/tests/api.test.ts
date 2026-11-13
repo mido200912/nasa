@@ -22,6 +22,15 @@ describe('Vulcan-X Backend & AI Engine API Tests', () => {
     const data = (await res.json()) as any;
     expect(data.success).toBe(true);
     expect(data.count).toBeGreaterThanOrEqual(5);
+    expect(new Set(data.datasets.map((chunk: any) => chunk.category))).toEqual(
+      new Set(['psi_research', 'scientific_guide', 'historical_incident', 'earth_spinoff'])
+    );
+    for (const chunk of data.datasets) {
+      expect(typeof chunk.text_content).toBe('string');
+      expect(chunk.text_content.length).toBeGreaterThan(0);
+      expect(chunk.source_url).toMatch(/^https:\/\//);
+      expect(typeof chunk.citation_title).toBe('string');
+    }
   });
 
   test('GET /api/v1/ai/key-status returns 5-key OpenRouter rotation pool status', async () => {
@@ -35,7 +44,7 @@ describe('Vulcan-X Backend & AI Engine API Tests', () => {
   });
 
   test(
-    'POST /api/v1/ai/query handles knowledge query with scientific fallback',
+    'POST /api/v1/ai/query returns source-bound official NASA chunks',
     async () => {
       const reqBody = {
         question: 'How does high oxygen in a lunar base affect solid material flammability and flame spread?',
@@ -57,10 +66,30 @@ describe('Vulcan-X Backend & AI Engine API Tests', () => {
       expect(data.answer.length).toBeGreaterThan(10);
       expect(Array.isArray(data.sources)).toBe(true);
       expect(data.sources.length).toBeGreaterThan(0);
+      expect(Array.isArray(data.retrieved_chunks)).toBe(true);
+      expect(data.retrieved_chunks.length).toBeGreaterThan(0);
+      for (const chunk of data.retrieved_chunks) {
+        expect(typeof chunk.text_content).toBe('string');
+        expect(chunk.source_url).toMatch(/^https:\/\//);
+        expect(typeof chunk.citation_title).toBe('string');
+        expect(['psi_research', 'scientific_guide', 'historical_incident', 'earth_spinoff']).toContain(chunk.category);
+      }
       expect(['Low', 'Medium', 'High']).toContain(data.risk_level);
     },
     { timeout: 30000 }
   );
+
+  test('historical incidents yield a source-bound emergency playbook', async () => {
+    const res = await app.fetch(
+      new Request('http://localhost:4000/api/v1/ai/query', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: 'What did Apollo 1 teach about oxygen and emergency escape?', environment: 'iss' }),
+      })
+    );
+    const data = (await res.json()) as any;
+    expect(data.emergency_playbook.length).toBeGreaterThan(0);
+    expect(data.retrieved_chunks.some((chunk: any) => chunk.category === 'historical_incident')).toBe(true);
+  });
 
   test('POST /api/v1/ai/query rejects invalid environment with 400', async () => {
     const reqBody = {

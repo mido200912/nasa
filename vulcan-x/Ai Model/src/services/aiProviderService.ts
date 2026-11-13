@@ -136,18 +136,9 @@ export class AiProviderService {
       }
     }
 
-    // If all 5 OpenRouter keys fail or no keys are configured, activate resilient offline scientific synthesizer
-    console.warn(
-      '[AiProviderService] 🛡️ All 5 OpenRouter API keys exhausted or unavailable. Activating Resilient NASA-PSI Scientific Engine fallback.'
-    );
-    const fallbackText = this.generateScientificFallback(userPrompt);
-
-    return {
-      text: fallbackText,
-      keyUsed: 0,
-      provider: 'NASA-PSI Deterministic Scientific Engine (Zero-Hallucination Fallback)',
-      model: 'vulcan-x-psi-engine-v1',
-    };
+    // Never manufacture an offline scientific answer. Callers retain their own
+    // explicitly sourced response or report that generation is unavailable.
+    throw new Error('All OpenRouter API keys are unavailable; no unsourced fallback response was generated.');
   }
 
   /**
@@ -213,20 +204,6 @@ export class AiProviderService {
       clearTimeout(timeoutId);
       throw err;
     }
-  }
-
-  /**
-   * Resilient Zero-Hallucination Fallback: Parses scientific context and generates precise responses
-   */
-  private generateScientificFallback(prompt: string): string {
-    return (
-      `[NASA PSI Scientific Analysis]\n\n` +
-      `Based on NASA Physical Science Informatics (PSI) combustion research (including BASS, Saffire, and ACME investigations):\n\n` +
-      `1. Combustion Dynamics: In microgravity and exploration atmospheres, the absence of natural buoyant convection modifies flame propagation. Low-speed ventilation (0.05 to 0.2 m/s) sustains flame spread rather than extinguishing it.\n` +
-      `2. Material Safety: Under elevated oxygen conditions (e.g. 30%-34% O2 in lunar/exploration atmospheres), materials must comply with NASA-STD-6001 Test 1 criteria. Standard terrestrial plastics and cotton fabrics show accelerated flame spread multipliers exceeding 2.5x.\n` +
-      `3. Suppression Protocols: Automatic ventilation isolation, followed by inert gas suppression (CO2 / N2) with sufficient dwell time (>15 min) is required to suppress persistent cool flame phenomena observed in FLEX experiments.\n\n` +
-      `Reference Investigations: NASA PSI BASS (PSI-EXP-BASS-2014), NASA Saffire (NASA/TM-20210018442), and NASA-STD-6001B.`
-    );
   }
 
   /**

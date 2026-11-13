@@ -12,6 +12,8 @@ export interface AiQueryResponse {
   success: boolean;
   answer: string;
   sources: string[];
+  retrieved_chunks: RagChunk[];
+  emergency_playbook: string[];
   risk_level: RiskLevel;
 }
 
@@ -33,21 +35,25 @@ export interface StressTestResponse {
   simulation_result: SimulationResult;
 }
 
-export interface RagDocument {
+export type RagCategory = 'psi_research' | 'scientific_guide' | 'historical_incident' | 'earth_spinoff';
+
+/** The persisted vector-store payload and the retrieval response contract. */
+export interface RagChunk {
   id: string;
-  investigation: string; // e.g. "BASS", "Saffire-I", "ACME", "FLEX-2", "CFI"
-  title: string;
-  description: string;
+  text_content: string;
+  source_url: string;
+  citation_title: string;
+  category: RagCategory;
   keywords: string[];
-  environment: EnvironmentType[];
-  findings: string;
-  citation: string;
-  gravity_condition: string; // e.g. "Microgravity (0g)", "Lunar (0.166g)", "Mars (0.38g)"
-  fire_safety_implication: string;
+  environments: EnvironmentType[];
+  emergency_playbook?: string[];
 }
 
+/** @deprecated Use RagChunk. */
+export type RagDocument = RagChunk;
+
 export interface SearchResult {
-  doc: RagDocument;
+  doc: RagChunk;
   score: number;
 }
 

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { NASA_PSI_KNOWLEDGE_BASE } from '../data/nasa_psi_knowledge_base';
+import { OFFICIAL_NASA_CORPUS } from '../data/official_nasa_corpus';
 import type { AiController } from '../controllers/aiController';
 import type { SimulatorController } from '../controllers/simulatorController';
 import { createAiRoutes } from './aiRoutes';
@@ -51,19 +51,12 @@ export function createMainRouter(
   router.route('/api/v1/ai', createAiRoutes(aiController));
   router.route('/api/v1/simulator', createSimulatorRoutes(simulatorController));
 
-  // NASA PSI Datasets Catalog endpoint
+  // Official NASA source-bound corpus catalog; every entry is a retrievable chunk.
   router.get('/api/v1/datasets', (c) => {
     return c.json({
       success: true,
-      count: NASA_PSI_KNOWLEDGE_BASE.length,
-      datasets: NASA_PSI_KNOWLEDGE_BASE.map((d) => ({
-        id: d.id,
-        investigation: d.investigation,
-        title: d.title,
-        environment: d.environment,
-        gravity_condition: d.gravity_condition,
-        citation: d.citation,
-      })),
+      count: OFFICIAL_NASA_CORPUS.length,
+      datasets: OFFICIAL_NASA_CORPUS,
     });
   });
 
