@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useSimulationStore } from "@/components/SimulationProvider";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUpRight, ChevronDown, Crosshair, Flame } from "lucide-react";
+import { ArrowDown, ArrowUpRight, ChevronDown, Crosshair } from "lucide-react";
+import { BrandWordmark } from "@/components/BrandWordmark";
 import { environments, researchLinks } from "@/lib/environments";
 import { solarPlanets } from "@/lib/solar-system";
 import { getPlanetMetrics, PLANET_FACT_NOTES, planetProfiles } from "@/lib/planet-profiles";
@@ -68,7 +69,7 @@ export function CommandHero() {
 
   return <section ref={hero} className="command-hero" id="mission-control" data-view="solar" aria-label="Interactive planetary explorer">
     <header className="navbar">
-      <a href="#mission-control" className="wordmark"><Flame size={25} strokeWidth={1.7} /><span>VULCAN<span className="brand-x">-X</span></span><span className="brand-divider" /><span className="brand-sub">NASA PSI<br />Research explorer</span></a>
+      <a href="#mission-control" className="wordmark"><BrandWordmark /><span className="brand-divider" /><span className="brand-sub">NASA PSI<br />Research explorer</span></a>
       <div className="nav-right"><span className="engine-status">RAG engine <span className="muted">/ Preview</span></span><Link className="button button-small" href="/dashboard">Launch simulator <ArrowUpRight size={15} /></Link></div>
     </header>
 

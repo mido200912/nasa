@@ -9,6 +9,7 @@ Approved design system · 13 November 2026. Preserve this system across future c
 - **Primary action:** launch the habitat simulator preview. Secondary action: explore the science.
 - **Boundaries:** an independent educational demonstrator, not an operational safety tool, live AI service, validated predictive model, or NASA-endorsed product. Keep these distinctions visible.
 - **Identity:** retain the VULCAN-X name and flame mark. Use NASA-inspired colors, not NASA insignia, seals, or worm lettering.
+- **Approved logo update:** use the typography-only off-white VULCAN-X artwork in `public/brand/vulcan-x-wordmark.webp` via `BrandWordmark` for header, footer, and dashboard branding; it supersedes the flame-mark lockups above. Preserve its letterforms and proportions, with no added icon or effects. The favicon uses the wordmark's X. Blue remains the interface accent.
 
 ## Color system
 

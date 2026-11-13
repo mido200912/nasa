@@ -3,7 +3,8 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, ArrowLeft, BookOpen, FlaskConical, Flame, Globe2, Menu, X } from "lucide-react";
+import { Activity, ArrowLeft, BookOpen, FlaskConical, Globe2, Menu, X } from "lucide-react";
+import { BrandWordmark } from "@/components/BrandWordmark";
 import { useSimulationStore } from "@/components/SimulationProvider";
 import { environmentNames } from "@/lib/simulation";
 
@@ -24,7 +25,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const custom = useSimulationStore((state) => state.custom);
   return <div className="command-center">
     <aside className="cc-sidebar" aria-label="Command center navigation">
-      <div className="cc-sidebar-top"><Link href="/" className="wordmark"><Flame size={25} aria-hidden="true" />VULCAN<span className="brand-x">-X</span></Link><button className="icon-button cc-menu-button" aria-label={navigationOpen ? "Close module navigation" : "Open module navigation"} aria-expanded={navigationOpen} aria-controls="module-navigation" onClick={() => setNavigationOpen(!navigationOpen)}>{navigationOpen ? <X size={20} /> : <Menu size={20} />}</button></div>
+      <div className="cc-sidebar-top"><Link href="/" className="wordmark"><BrandWordmark /></Link><button className="icon-button cc-menu-button" aria-label={navigationOpen ? "Close module navigation" : "Open module navigation"} aria-expanded={navigationOpen} aria-controls="module-navigation" onClick={() => setNavigationOpen(!navigationOpen)}>{navigationOpen ? <X size={20} /> : <Menu size={20} />}</button></div>
       <span className="cc-sidebar-caption">Command center</span>
       <nav id="module-navigation" className="cc-module-nav" data-open={navigationOpen} aria-label="Simulation modules">{modules.map((item) => <Link href={item.href} key={item.href} aria-current={pathname === item.href ? "page" : undefined} onClick={() => setNavigationOpen(false)}><item.icon size={19} aria-hidden="true" /><span>{item.name}<small>{item.description}</small></span></Link>)}</nav>
       <div className="cc-sidebar-bottom"><p>Research into readiness.<br />Never a substitute for validation.</p><Link className="text-link" href="/"><ArrowLeft size={15} aria-hidden="true" />Planetary explorer</Link><span className="cc-caption">Independent educational demonstrator</span></div>
