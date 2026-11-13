@@ -6,16 +6,20 @@ import * as Select from "@radix-ui/react-select";
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronUp, CircleDot, FileText, Globe2, RotateCcw, Satellite, ShieldCheck, Square } from "lucide-react";
 import { calculateDemoRisk } from "@/lib/risk";
 import { Reveal } from "@/components/ui/Reveal";
+import { useSimulationStore } from "@/components/SimulationProvider";
 
 function StressTest() {
-  const [oxygen, setOxygen] = useState(30);
-  const [pressure, setPressure] = useState(10.2);
+  const oxygen = useSimulationStore((state) => state.oxygenLevel);
+  const pressure = useSimulationStore((state) => state.pressurePsi);
+  const setParameter = useSimulationStore((state) => state.setParameter);
+  const setOxygen = (value: number) => setParameter("oxygenLevel", value);
+  const setPressure = (value: number) => setParameter("pressurePsi", value);
   const risk = calculateDemoRisk(oxygen, pressure);
   return <article className="engine-card stress-card" id="stress-test">
     <div className="engine-card-top"><span>01 / Predict</span><span className="card-demo-tag">Interactive demo</span></div>
     <h3>Ask “what if.”<br />Before ignition.</h3><p>Change the atmosphere. See how an illustrative material-risk matrix responds.</p>
-    <div className="stress-controls"><label htmlFor="oxygen">Oxygen concentration<span className="mono">{oxygen}<small>% O₂</small></span></label><input id="oxygen" type="range" min="18" max="35" step="1" value={oxygen} onChange={(event) => setOxygen(Number(event.target.value))} /><div className="range-labels"><span>18% / Earth-like</span><span>35% / O₂-rich</span></div>
-      <label htmlFor="pressure">Habitat pressure<span className="mono">{pressure.toFixed(1)}<small>psi</small></span></label><input id="pressure" type="range" min="7" max="15" step="0.1" value={pressure} onChange={(event) => setPressure(Number(event.target.value))} />
+    <div className="stress-controls"><label htmlFor="oxygen">Oxygen concentration<span className="mono">{oxygen}<small>% O₂</small></span></label><input id="oxygen" type="range" min="15" max="40" step="1" value={oxygen} onChange={(event) => setOxygen(Number(event.target.value))} /><div className="range-labels"><span>15% / O₂-lean</span><span>40% / O₂-rich</span></div>
+      <label htmlFor="pressure">Habitat pressure<span className="mono">{pressure.toFixed(1)}<small>psi</small></span></label><input id="pressure" type="range" min="5" max="14.7" step="0.1" value={pressure} onChange={(event) => setPressure(Number(event.target.value))} />
     </div>
     <div className="risk-heading"><span>Illustrative risk matrix</span><span>{risk.label.charAt(0) + risk.label.slice(1).toLowerCase()}</span></div>
     <div className="risk-bars">{risk.materials.map((material, index) => <div className="risk-row" key={material.name}><div><span>{material.name}</span><span className="mono">{material.value}<span className="muted"> / 100</span></span></div><div className="risk-track"><span className={`risk-fill risk-${index}`} style={{ transform: `scaleX(${material.value / 100})` }} /></div></div>)}</div>
@@ -25,10 +29,11 @@ function StressTest() {
 }
 
 function DualUseBridge() {
-  const [earthMode, setEarthMode] = useState(false);
+  const earthMode = useSimulationStore((state) => state.earthImpactMode);
+  const setEarthMode = useSimulationStore((state) => state.setEarthImpactMode);
   return <article className="engine-card bridge-card"><div className="engine-card-top"><span>02 / Translate</span><ArrowUpRight size={16} /></div><h3>Space science.<br />Earth-side impact.</h3><p>Turn combustion questions into better terrestrial engineering requirements.</p>
     <div className="bridge-visual" aria-hidden="true"><div className={`bridge-node ${!earthMode ? "selected" : ""}`}><Satellite size={28} strokeWidth={1} /><span>ORBIT</span></div><div className="bridge-connection"><span /><ArrowRight size={15} /><span /></div><div className={`bridge-node ${earthMode ? "selected" : ""}`}><Globe2 size={30} strokeWidth={1} /><span>EARTH</span></div></div>
-    <div className="bridge-toggle"><span>Terrestrial mode</span><button role="switch" aria-checked={earthMode} aria-label="Terrestrial engineering mode" onClick={() => setEarthMode((value) => !value)}><span /></button></div>
+    <div className="bridge-toggle"><span>Terrestrial mode</span><button role="switch" aria-checked={earthMode} aria-label="Terrestrial engineering mode" onClick={() => setEarthMode(!earthMode)}><span /></button></div>
     <div className="bridge-output" aria-live="polite"><span className="bridge-output-title">{earthMode ? "Terrestrial engineering spec" : "Space experiment context"}</span><h4>{earthMode ? "Fine-water-mist suppression" : "Droplet combustion behavior"}</h4><p>{earthMode ? "Evaluate droplet distribution, electrical compatibility, and enclosure ventilation against applicable fire-test standards." : "Explore how droplets burn and extinguish when buoyancy no longer drives the transport of heat and oxygen."}</p><span className="bridge-output-foot"><CircleDot size={11} />{earthMode ? "Concept spec · validation required" : "Research context · NASA FLEX"}</span></div>
     <div className="bridge-secondary"><ShieldCheck size={16} /><span>{earthMode ? "Thermal gear: require certified heat-flux testing." : "Thermal protection is another translation pathway."}</span></div>
   </article>;

@@ -61,6 +61,21 @@
   --color-mission: var(--color-accent);
   --color-telemetry: var(--color-control);
   --font-sans: var(--font-body);
+  /* shadcn primitives consume the existing VULCAN-X system, not a second theme. */
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-popover: var(--color-panel-raised);
+  --color-popover-foreground: var(--color-text);
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--color-on-accent);
+  --color-secondary: var(--color-panel);
+  --color-secondary-foreground: var(--color-body);
+  --color-muted-foreground: var(--color-muted);
+  --color-accent-foreground: var(--color-on-accent);
+  --color-destructive: var(--color-accent-readable);
+  --color-border: var(--color-line-strong);
+  --color-input: var(--color-line-strong);
+  --color-ring: var(--color-focus);
 }
 
 * { box-sizing: border-box; }

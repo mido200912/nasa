@@ -40,6 +40,7 @@ test("picker supports keyboard selection, typeahead and Escape without changing 
   await expect(page.getByRole("option", { name: /Dust contamination/ })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(picker).toContainText("Dust contamination");
+  await expect(picker).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("option", { name: /Dust contamination/ })).toBeFocused();
   await page.keyboard.press("Home");
@@ -54,6 +55,7 @@ test("picker supports keyboard selection, typeahead and Escape without changing 
   await expect(page.getByRole("option", { name: /Smoke detection/ })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(picker).toContainText("Smoke detection");
+  await expect(picker).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Generate preview", exact: true })).toBeFocused();
 });

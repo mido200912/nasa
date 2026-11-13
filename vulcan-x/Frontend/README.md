@@ -1,6 +1,6 @@
 # VULCAN-X frontend
 
-Independent, educational habitat fire-science demonstrator. Next.js App Router, React 19, strict TypeScript, Tailwind CSS 4, React Three Fiber / Three.js, Framer Motion, and Lucide.
+Independent, educational habitat fire-science demonstrator. Next.js App Router, React 19, strict TypeScript, Tailwind CSS 4, shadcn/Radix, Zustand, Recharts, React Three Fiber / Three.js, Framer Motion, and Lucide. Visual rules are locked in [`design.md`](design.md).
 
 ## Run
 
@@ -23,6 +23,7 @@ npm run typecheck
 npx playwright install chromium
 npm run test:e2e
 npm run qa:visual
+npm run qa:dashboard
 npm run qa:scroll
 ```
 
@@ -32,10 +33,35 @@ If port 3000 belongs to another project, start this app on a free port and set `
 
 ## Implemented
 
+### Command center
+
+The landing launch action opens `/dashboard` with shared scenario state. The established root-level `app/`, `components/`, and `lib/` structure is retained; there is no competing `src/` tree.
+
+| Route | Module |
+| --- | --- |
+| `/dashboard` | Environment presets, oxygen/pressure/gravity sliders, six materials, procedural 3D flame, illustrative risk matrix, spread and radar charts |
+| `/dashboard/playbook` | Three incident templates, a question for human review, simulated streaming, stop/regenerate, 12 checkable review items, research links, Markdown export |
+| `/dashboard/earth-bridge` | Shared terrestrial switch, three research translation pathways, editable baseline/target impact comparisons |
+| `/dashboard/materials` | Search/family/program filters, six research candidate materials, simulator material selection, two-material radar comparison |
+
+`store/useSimulationStore.ts` creates a per-provider Zustand store (no server-shared user state); `components/SimulationProvider.tsx` exposes the selector hook. Environment presets reset all atmosphere values; manual edits mark the preset custom. Selecting Mars/Earth in the landing explorer updates the corresponding habitat preset; Moon/ISS markers select their own presets. Other planets remain reference-only and preserve the last habitat scenario. Dashboard changes focus Mars or Earth on return. Landing oxygen/pressure and Earth-mode previews share state too. Parameters/material/mode/focus persist within the browser tab via versioned `sessionStorage`, with validated rehydration and in-memory fallback if storage is blocked.
+
+The dashboard retains the locked blue/white tokens, Barlow typography, ruled surfaces, native scrolling, and mobile collapsible module navigation. Only the stress-test route creates a canvas; navigation unmounts it. The flame uses procedural GLSL value noise and rim shading, with SVG fallback. Reduced motion, offscreen, background, and scrolling states suspend continuous rendering. Charts disable entrance animation and provide textual summaries.
+
+The restored solid-flame style is input-responsive: oxygen changes scale/brightness/motion, pressure changes scale/width/brightness, gravity changes spherical versus tapered shape and partial-gravity elongation, and the selected material changes synthetic intensity/size/motion. `lib/flame-response.ts` defines bounded, deliberately exaggerated visual mappings, reusing the catalog's synthetic heat-release weights—not measured material chemistry or a validated combustion law. Live shader uniforms update explicitly without recompilation, including on-demand/reduced-motion frames; SVG fallback responds to the same inputs. No material is implied to ignite under the displayed conditions. `tests/e2e/flame-response.spec.ts` checks actual rendered pixel differences on desktop/mobile and fallback changes. `node scripts/flame-response-qa.mjs` captures 18 input-comparison panels under `test-results/flame-response/`.
+
+`lib/simulation.ts` documents the synthetic profiles and formula. Earth baseline is 1.0×; the supplied lunar example is 3.5×. Gravity changes the conceptual morphology, not a calibrated combustion law. LOI values are intentionally uncurated instead of fabricated. Program tags are reading context, not verified material-test citations. Water reduction starts with the brief's assumed 80% example; thermal/detection targets start blank until entered. No gain is represented as measured.
+
+`lib/playbook.ts` produces review-only templates. Free-text questions are attached for a human reviewer, **not interpreted** by an LLM. Changing context, incident, or question clears stale output; active streams cancel on context changes/unmount. Export includes the scenario snapshot, review acknowledgements, limitations, and public reading links. No operational agent quantities, nozzle pressures, or depressurization thresholds are invented. The AI SDK is installed for future integration but no provider, backend, corpus, retrieval pipeline, or live AI service is configured.
+
+Dashboard verification: `tests/simulation.test.ts`, `tests/e2e/dashboard.spec.ts`, and `npm run qa:dashboard`. The latter captures completed modules and checks all six target widths at normal/200% root text sizing under `test-results/dashboard-visual/`. TestSprite is not configured; verification uses the existing Vitest and Playwright tools.
+
+### Landing page
+
 - NASA-inspired blue/white interface on the existing near-black surfaces. Primary blue follows NASA's current [insignia color guide](https://www.nasa.gov/nasa-brand-center/brand-guidelines/): `#0032A0`. Blue primary buttons use white text; lighter blue semantic tokens keep branding, highlighted data, links, controls and focus rings readable in dark mode. The VULCAN-X mark, favicon and illustrative risk indicators are blue too, replacing the intermediate red accents per user follow-up. Natural planet and flame colors are not recolored. No NASA logo or endorsement is implied.
 - Reading-comfort scale: 16px body text with 1.65 line spacing, 14px controls/labels, and 12–13px supporting captions. Soft off-white replaces stark primary text; secondary grays are brighter and card surfaces slightly lighter. Most UI labels are sentence case in regular Barlow, with condensed type reserved for display headings. Preview/architecture grids reflow by readable minimum widths; the desktop dossier determines hero height so enlarged text and expanded notes cannot be clipped. Planet scene position/size remain unchanged. Tests cover six viewport widths and 200% text sizing in the preview/architecture sections.
 - The incident picker is a minimal Radix Select: one-line 48px trigger and three plain incident options, without location subtitles, menu headings or checkmarks. Keyboard navigation/typeahead and touch remain supported. Its portal avoids card clipping, flips/shrinks to available viewport space, and supports 200% text sizing. Escape/outside click cancels without changing the choice; selecting a new incident clears stale scripted output. Selection stays disabled during generation and unlocks on stop/completion.
-- One lazy-loaded WebGL canvas. GLSL 3D gradient Perlin noise, crater relief, procedural continents/clouds, and Fresnel rims; zero runtime texture requests.
+- One lazy-loaded WebGL canvas per relevant route. Landing planets use GLSL 3D gradient Perlin noise, crater relief, procedural continents/clouds, and Fresnel rims; zero runtime texture requests.
 - A planetary explorer rather than a literal solar-system model: all eight planets sit on one tilted elliptical navigation curve with a subtle guide. Focus changes travel along the curve, bringing the selected planet to the near side while the others recede in size and brightness. No Sun, solar glow, or concentric orbital grid is rendered. Procedural surfaces, Jupiter cloud bands, and Saturn rings remain; Moon/ISS markers appear only when Earth is in focus.
 - On desktop, the explorer spans approximately 70% of the page width, with telemetry in a separate right-hand column. Projection-based camera fitting responds to viewport changes and fits every selection, including Saturn's rings, without zoom jumps. Mobile keeps a stacked layout.
 - The right-hand card follows the active planet on initial load, clicks, and swipes. All eight profiles include NASA/NSSDCA reference temperature, effective equatorial gravity, equatorial diameter, rotation period, environment notes, and source links. Giant-planet reference levels and retrograde rotation are explicitly qualified; these are not live telemetry or invented fire-risk estimates. The desktop card stays raised beside the intro, and mobile lets its content determine the section height rather than clipping it.
@@ -57,7 +83,7 @@ If port 3000 belongs to another project, start this app on a free port and set `
 
 **Not an operational safety system.** There is no backend, live RAG retrieval, LLM inference, or NASA-certified prediction connected. The UI says so rather than implying a working service.
 
-The 3.5× burn-rate and +40% ignitability figures come from the supplied design brief. They are displayed as unvalidated scenario assumptions, not sourced NASA experimental conclusions. `lib/risk.ts` is a bounded, illustrative UI formula, not a fitted physics model. Material scores cannot be used for engineering decisions.
+The 3.5× burn-rate and +40% ignitability figures come from the supplied design brief. They are displayed as unvalidated scenario assumptions, not sourced NASA experimental conclusions. `lib/risk.ts` (landing preview) and `lib/simulation.ts` (dashboard) are bounded, illustrative UI formulas, not fitted physics models. Material scores cannot be used for engineering decisions.
 
 The playbook is a deterministic outline selected from three examples, not an autonomous emergency protocol. In a real incident use approved mission procedures. Earth-side specifications are conceptual and require applicable standards, testing, and qualified review. Research links in `lib/environments.ts` give context, not evidence supporting the demonstration's numeric outputs. Orbital spacing, station geometry, and flame diagrams are conceptual, not to scale.
 

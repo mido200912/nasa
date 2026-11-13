@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useSimulationStore } from "@/components/SimulationProvider";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowUpRight, ChevronDown, Crosshair, Flame } from "lucide-react";
@@ -20,9 +22,12 @@ function subscribeMotion(callback: () => void) {
 }
 
 export function CommandHero() {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const environmentId = useSimulationStore((state) => state.environment);
+  const setEnvironment = useSimulationStore((state) => state.setEnvironment);
+  const activeIndex = environments.findIndex((item) => item.id === environmentId);
   const [visible, setVisible] = useState(true);
-  const [selectedPlanet, setSelectedPlanet] = useState("earth");
+  const selectedPlanet = useSimulationStore((state) => state.focusedPlanet);
+  const selectPlanet = useSimulationStore((state) => state.inspectPlanet);
   const [cardMode, setCardMode] = useState<"planet" | "habitat">("planet");
   const reducedMotion = useSyncExternalStore(subscribeMotion, () => window.matchMedia("(prefers-reduced-motion: reduce)").matches, () => false);
   const hero = useRef<HTMLElement>(null);
@@ -43,14 +48,11 @@ export function CommandHero() {
 
   function selectEnvironment(index: number) {
     setCardMode("habitat");
-    setActiveIndex(index);
-    setSelectedPlanet(index === 1 ? "mars" : "earth");
+    setEnvironment(environments[index].id);
   }
   function inspectPlanet(id: string) {
     setCardMode("planet");
-    setSelectedPlanet(id);
-    if (id === "earth") setActiveIndex(3);
-    if (id === "mars") setActiveIndex(1);
+    selectPlanet(id);
   }
 
   useEffect(() => {
@@ -67,7 +69,7 @@ export function CommandHero() {
   return <section ref={hero} className="command-hero" id="mission-control" data-view="solar" aria-label="Interactive planetary explorer">
     <header className="navbar">
       <a href="#mission-control" className="wordmark"><Flame size={25} strokeWidth={1.7} /><span>VULCAN<span className="brand-x">-X</span></span><span className="brand-divider" /><span className="brand-sub">NASA PSI<br />Research explorer</span></a>
-      <div className="nav-right"><span className="engine-status">RAG engine <span className="muted">/ Preview</span></span><a className="button button-small" href="#stress-test">Launch simulator <ArrowUpRight size={15} /></a></div>
+      <div className="nav-right"><span className="engine-status">RAG engine <span className="muted">/ Preview</span></span><Link className="button button-small" href="/dashboard">Launch simulator <ArrowUpRight size={15} /></Link></div>
     </header>
 
     <div className="hero-intro"><h1><span className="hero-title-line">Different worlds.</span><br /><span className="hero-title-line">Different <span>fire rules.</span></span></h1><p>Stress-test the next frontier.<br /> Explore combustion beyond Earth.</p><a href="#paradox" className="text-link science-button"><span>Explore the science</span><span className="science-button-icon" aria-hidden="true"><ArrowDown size={17} strokeWidth={1.75} /></span></a></div>

@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "qa:visual": "node scripts/visual-qa.mjs",
+    "qa:dashboard": "node scripts/dashboard-qa.mjs",
     "qa:scroll": "node scripts/scroll-qa.mjs",
     "assets": "node scripts/download-space-assets.mjs"
   },
@@ -22,14 +23,21 @@
     "@react-three/drei": "10.7.7",
     "@react-three/fiber": "9.4.0",
     "@types/three": "^0.180.0",
+    "ai": "^7.0.171",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "12.23.24",
     "lucide-react": "0.468.0",
     "next": "^16.0.0",
+    "radix-ui": "^1.8.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "recharts": "^3.10.1",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.3.1",
-    "three": "0.180.0"
+    "three": "0.180.0",
+    "zustand": "^5.1.0"
   },
   "overrides": {
     "motion-dom": "12.23.23",

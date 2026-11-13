@@ -60,7 +60,7 @@ test("scrolling suspends continuous WebGL and returns to normal when idle", asyn
   expect(sample.draws).toBe(0);
   await expect(page.locator(".orbital-canvas")).toHaveAttribute("data-rendering", "active");
   await page.getByRole("link", { name: "Launch simulator", exact: false }).click();
-  await expect(page).toHaveURL(/#stress-test$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("slider", { name: "Oxygen concentration" })).toBeInViewport();
 });
 

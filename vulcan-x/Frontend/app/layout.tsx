@@ -6,6 +6,7 @@ import "@fontsource/barlow/700.css";
 import "@fontsource/barlow-condensed/500.css";
 import "@fontsource/barlow-condensed/600.css";
 import "./globals.css";
+import { SimulationProvider } from "@/components/SimulationProvider";
 
 export const metadata: Metadata = {
   title: "VULCAN-X — Beyond Earth. Beyond fire as we know it.",
@@ -15,5 +16,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#050508", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><a className="skip-link" href="#main-content">Skip to content</a>{children}</body></html>;
+  return <html lang="en"><body><a className="skip-link" href="#main-content">Skip to content</a><SimulationProvider>{children}</SimulationProvider></body></html>;
 }
