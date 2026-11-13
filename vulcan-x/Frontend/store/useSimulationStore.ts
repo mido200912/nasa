@@ -6,6 +6,8 @@ import { parseStressTestResult, type StressTestResult } from "@/lib/stress-test"
 export interface SimulationState extends Parameters {
   environment: EnvironmentId;
   selectedMaterial: MaterialId;
+  catalogEnvironmentId: number | null;
+  catalogMaterialId: number | null;
   earthImpactMode: boolean;
   custom: boolean;
   focusedPlanet: string;
@@ -21,14 +23,16 @@ export interface SimulationState extends Parameters {
   runStressTest: () => Promise<void>;
   cancelStressTest: () => void;
   setEnvironment: (environment: EnvironmentId) => void;
+  setCatalogEnvironment: (catalogEnvironmentId: number, visualAlias: EnvironmentId | null) => void;
   setParameter: (key: keyof Parameters, value: number) => void;
   setMaterial: (material: MaterialId) => void;
+  setCatalogMaterial: (catalogMaterialId: number, visualAlias: MaterialId | null) => void;
   setEarthImpactMode: (enabled: boolean) => void;
   inspectPlanet: (id: string) => void;
   reset: () => void;
 }
 
-const defaults = { ...presets.lunar, environment: "lunar" as const, selectedMaterial: "cable_insulation" as const, earthImpactMode: false, custom: false, focusedPlanet: "earth" };
+const defaults = { ...presets.lunar, environment: "lunar" as const, selectedMaterial: "cable_insulation" as const, catalogEnvironmentId: null, catalogMaterialId: null, earthImpactMode: false, custom: false, focusedPlanet: "earth" };
 const planetIds = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"];
 
 export function createSimulationStore() {
@@ -69,15 +73,27 @@ export function createSimulationStore() {
       } finally { clearTimeout(timeout); if (current === requestVersion) controller = null; }
     },
     setEnvironment: (environment) => {
-      if (isEnvironment(environment)) { cancelWork(); set({ ...transient, environment, ...presets[environment], custom: false, focusedPlanet: environment === "mars" ? "mars" : "earth" }); }
+      if (isEnvironment(environment)) { cancelWork(); set({ ...transient, catalogEnvironmentId: null, environment, ...presets[environment], custom: false, focusedPlanet: environment === "mars" ? "mars" : "earth" }); }
+    },
+    setCatalogEnvironment: (catalogEnvironmentId, visualAlias) => {
+      if (!Number.isSafeInteger(catalogEnvironmentId) || catalogEnvironmentId < 1) return;
+      cancelWork();
+      // An explicit code mapping changes only the educational visualization. Catalog IDs remain separate for future persisted workflows.
+      set(visualAlias ? { ...transient, catalogEnvironmentId, environment: visualAlias, ...presets[visualAlias], custom: false, focusedPlanet: visualAlias === "mars" ? "mars" : "earth" } : { catalogEnvironmentId });
     },
     setParameter: (key, value) => { cancelWork(); set((state) => ({ ...transient, ...normalizeParameters({ ...state, [key]: value }), custom: true })); },
-    setMaterial: (selectedMaterial) => { if (isMaterial(selectedMaterial)) { cancelWork(); set({ ...transient, selectedMaterial }); } },
+    setMaterial: (selectedMaterial) => { if (isMaterial(selectedMaterial)) { cancelWork(); set({ ...transient, catalogMaterialId: null, selectedMaterial }); } },
+    setCatalogMaterial: (catalogMaterialId, visualAlias) => {
+      if (!Number.isSafeInteger(catalogMaterialId) || catalogMaterialId < 1) return;
+      cancelWork();
+      // Do not infer scientific properties from the illustrative alias; this is visual-only mapping.
+      set(visualAlias ? { ...transient, catalogMaterialId, selectedMaterial: visualAlias } : { catalogMaterialId });
+    },
     setEarthImpactMode: (earthImpactMode) => set({ earthImpactMode: Boolean(earthImpactMode) }),
     inspectPlanet: (focusedPlanet) => {
       if (!planetIds.includes(focusedPlanet)) return;
       if (focusedPlanet === "mars" || focusedPlanet === "earth") cancelWork();
-      set(focusedPlanet === "mars" ? { ...transient, focusedPlanet, environment: "mars", ...presets.mars, custom: false } : focusedPlanet === "earth" ? { ...transient, focusedPlanet, environment: "earth", ...presets.earth, custom: false } : { focusedPlanet });
+      set(focusedPlanet === "mars" ? { ...transient, catalogEnvironmentId: null, focusedPlanet, environment: "mars", ...presets.mars, custom: false } : focusedPlanet === "earth" ? { ...transient, catalogEnvironmentId: null, focusedPlanet, environment: "earth", ...presets.earth, custom: false } : { focusedPlanet });
     },
     reset: () => { cancelWork(); set({ ...defaults, ...transient }); },
   }), {

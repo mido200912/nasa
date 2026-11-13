@@ -1,4 +1,4 @@
-import { buildStressTestResult, parseStressTestRequest, parseStressTestResult } from "@/lib/stress-test";
+import { buildStressTestResult, parseStressTestRequest } from "@/lib/stress-test";
 
 const headers = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "X-Simulation-Mode": "illustrative" };
 const error = (message: string, status: number) => Response.json({ error: message }, { status, headers });
@@ -31,20 +31,5 @@ export async function POST(request: Request) {
   const input = parseStressTestRequest(body);
   if (!input) return error("Invalid scenario: check environment, material, and supported parameter ranges.", 400);
 
-  // Set NEXT_PUBLIC_API_URL to the FastAPI origin (e.g. http://localhost:8000).
-  // Keep the browser same-origin; proxying avoids CORS and never forwards cookies.
-  const base = process.env.NEXT_PUBLIC_API_URL?.trim();
-  if (!base) return Response.json(buildStressTestResult(input), { headers });
-  let target: URL;
-  try {
-    target = new URL(`${base.replace(/\/+$/, "")}/api/v1/simulator/stress-test`);
-    if (!["http:", "https:"].includes(target.protocol) || target.username || target.password || target.search || target.hash || target.href === request.url) throw new Error("Invalid backend");
-  } catch { return error("Stress-test backend configuration is invalid.", 503); }
-  try {
-    const upstream = await fetch(target.href, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(input), cache: "no-store", redirect: "error", signal: AbortSignal.any([request.signal, AbortSignal.timeout(8000)]) });
-    if (!upstream.ok) { await upstream.body?.cancel(); return error("Stress-test backend is unavailable.", 502); }
-    const result = parseStressTestResult(await boundedJson(upstream.body, 32768));
-    if (!result) return error("Stress-test backend returned an invalid result.", 502);
-    return Response.json({ ...result, illustrative: true, disclaimer: "Unvalidated teaching preview. Suppression values are animation settings, not operational guidance. Research references are reading context, not validation." }, { headers });
-  } catch { return error("Stress-test backend is unavailable or timed out.", 502); }
+  return Response.json(buildStressTestResult(input), { headers });
 }

@@ -43,6 +43,13 @@
 .cc-tag { display: inline-flex; padding: 6px 10px; border: 1px solid var(--color-line-strong); border-radius: 3px; color: var(--color-accent-readable); font-size: var(--text-caption); }
 .cc-simulator-grid { display: grid; grid-template-columns: minmax(230px, 0.95fr) minmax(280px, 1.3fr) minmax(230px, 0.95fr); gap: 24px; align-items: stretch; }
 .cc-field { min-width: 0; display: grid; gap: 8px; }
+.cc-catalog-selector { display: grid; gap: 12px; margin-bottom: 24px; }
+.cc-catalog-selector > .cc-field { margin-bottom: 0; }
+.cc-habitat-analysis, .cc-habitat-result { margin-top: 24px; }
+.cc-habitat-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
+.cc-readonly-value { display: block; min-height: 48px; padding: 12px; border: 1px solid var(--color-line-strong); border-radius: 4px; color: var(--color-body); }
+.cc-select-native { width: 100%; min-height: 48px; border: 1px solid var(--color-line-strong); border-radius: 4px; background: var(--color-panel); color: var(--color-text); padding: 10px 12px; font: inherit; }
+.cc-field-error { margin: 0; color: var(--color-secondary); font-size: var(--text-caption); }
 .cc-field > label, .cc-field-heading label, .cc-console form > label { display: block; color: var(--color-body); font-size: var(--text-label); font-weight: 500; }
 .cc-select[data-slot="select-trigger"] { width: 100%; min-width: 0; height: auto; min-height: 48px; padding: 10px 12px; border-radius: 4px; border: 1px solid var(--color-line-strong); background: var(--color-panel); color: var(--color-text); box-shadow: none; font-size: var(--text-label); }
 .cc-select > [data-slot="select-value"] { min-width: 0; white-space: normal; overflow: visible; line-clamp: none; -webkit-line-clamp: unset; }
@@ -109,6 +116,9 @@ body[data-scroll-locked]:has(.cc-menu) { margin-right: 0 !important; }
 .cc-console textarea:disabled, .cc-impact-inputs:disabled { opacity: 0.6; }
 .cc-field input::placeholder { color: var(--color-muted); }
 .cc-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+.cc-mode-actions { margin-top: 0; margin-bottom: 24px; }
+.cc-knowledge-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
+.cc-citation-list { display: grid; gap: 16px; padding-left: 20px; }
 .cc-console-output { border-block: 1px solid var(--color-line); margin: 24px 0 16px; padding: 20px 0; min-height: 180px; }
 .cc-console-output > .cc-caption { display: block; margin-bottom: 12px; }
 .cc-markdown { font-size: var(--text-label); overflow-wrap: anywhere; }

@@ -31,26 +31,16 @@ describe("stress-test HTTP boundary", () => {
     expect((await POST(request({ ...input, extra: "x".repeat(3000) }))).status).toBe(413);
     expect((await POST(new Request(request(input), { headers: { "Content-Type": "text/plain" } }))).status).toBe(415);
   });
-  it("proxies only validated payloads to the configured backend", async () => {
-    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://localhost:8000/");
-    const result = buildStressTestResult(input);
-    const upstream = vi.fn().mockResolvedValue(Response.json(result));
+  it("remains an offline illustrative route even when legacy public configuration exists", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "https://untrusted.example.test");
+    const upstream = vi.fn();
     vi.stubGlobal("fetch", upstream);
-    expect((await POST(request(input))).status).toBe(200);
-    expect(upstream.mock.calls[0][0]).toBe("http://localhost:8000/api/v1/simulator/stress-test");
-    expect(JSON.parse(upstream.mock.calls[0][1].body)).toEqual(input);
-    upstream.mockResolvedValueOnce(Response.json({ ...result, flameParams: { ...result.flameParams, particleDensity: 1000000 } }));
-    expect((await POST(request(input))).status).toBe(502);
-    upstream.mockRejectedValueOnce(new Error("private upstream detail"));
-    const failure = await POST(request(input));
-    expect(failure.status).toBe(502);
-    expect(await failure.text()).not.toContain("private upstream detail");
-  });
-  it("refuses self-proxy loops and unsafe configured URLs", async () => {
-    for (const base of ["http://localhost:3001", "file:///secret", "https://name:password@example.com"]) {
-      vi.stubEnv("NEXT_PUBLIC_API_URL", base);
-      expect((await POST(request(input))).status).toBe(503);
-    }
+
+    const response = await POST(request(input));
+
+    expect(response.status).toBe(200);
+    expect(upstream).not.toHaveBeenCalled();
+    expect((await response.json()).illustrative).toBe(true);
   });
 });
 

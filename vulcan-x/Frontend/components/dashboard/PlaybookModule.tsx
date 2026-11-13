@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import { useSimulationStore } from "@/components/SimulationProvider";
 import { buildPlaybook, exportPlaybook, incidentScenarios, type IncidentId, type Playbook } from "@/lib/playbook";
 import { environmentNames, type EnvironmentId, type SimulationInput } from "@/lib/simulation";
+import { KnowledgeQueryPanel } from "@/components/dashboard/KnowledgeQueryPanel";
 
 export function PlaybookModule() {
   const environment = useSimulationStore((state) => state.environment);
@@ -15,9 +16,12 @@ export function PlaybookModule() {
   const pressurePsi = useSimulationStore((state) => state.pressurePsi);
   const gravityG = useSimulationStore((state) => state.gravityG);
   const selectedMaterial = useSimulationStore((state) => state.selectedMaterial);
+  const catalogEnvironmentId = useSimulationStore((state) => state.catalogEnvironmentId);
+  const catalogMaterialId = useSimulationStore((state) => state.catalogMaterialId);
+  const [mode, setMode] = useState<"offline" | "live">("offline");
   const input = { environment, oxygenLevel, pressurePsi, gravityG, selectedMaterial };
   // A changed context creates a new review session, cancelling all stale output.
-  return <><div className="cc-page-heading"><div><h1>Safety playbook & research console</h1><p>A structured outline for engineering review. Not autonomous emergency advice.</p></div><span className="cc-tag">Scripted fallback / no live RAG</span></div><PlaybookConsole key={JSON.stringify(input)} input={input} /></>;
+  return <><div className="cc-page-heading"><div><h1>Safety playbook & research console</h1><p>A structured outline for engineering review. Not autonomous emergency advice.</p></div><span className="cc-tag">{mode === "live" ? "Live AI / persisted" : "Offline educational preview"}</span></div><div className="cc-actions cc-mode-actions" role="group" aria-label="Research console mode"><button type="button" className={mode === "offline" ? "button" : "button button-outline"} onClick={() => setMode("offline")}>Offline Playbook</button><button type="button" className={mode === "live" ? "button" : "button button-outline"} onClick={() => setMode("live")}>Live Knowledge</button></div>{mode === "live" ? <KnowledgeQueryPanel environmentId={catalogEnvironmentId} materialId={catalogMaterialId} /> : <PlaybookConsole key={JSON.stringify(input)} input={input} />}</>;
 }
 
 function PlaybookConsole({ input }: { input: SimulationInput & { environment: EnvironmentId } }) {

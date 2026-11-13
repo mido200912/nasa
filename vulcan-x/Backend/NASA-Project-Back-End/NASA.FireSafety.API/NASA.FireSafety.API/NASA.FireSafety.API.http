@@ -1,0 +1,6 @@
+@NASA.FireSafety.API_HostAddress = http://localhost:5082
+
+GET {{NASA.FireSafety.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
