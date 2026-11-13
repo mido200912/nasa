@@ -6,6 +6,7 @@ import { ArrowUpRight, Droplets, Flame, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useSimulationStore } from "@/components/SimulationProvider";
 import { EnvironmentSelect, MaterialSelect, ParameterSlider } from "@/components/dashboard/Controls";
+import { HabitatAnalysisPanel } from "@/components/dashboard/HabitatAnalysisPanel";
 import { calculateSimulation, materialCatalog } from "@/lib/simulation";
 import { chamberLift } from "@/lib/stress-test";
 import styles from "./StressTestModule.module.css";
@@ -53,6 +54,7 @@ export function StressTestModule() {
       <section className="cc-panel cc-risk-panel" aria-label="Illustrative risk matrix"><div className="cc-panel-heading"><h2>Instant risk matrix</h2><span className="cc-caption">Unvalidated demo</span></div><div className="cc-score"><span>Scenario index</span><strong data-testid="dashboard-risk-score">{metrics.ignitabilityRiskScore}<small> / 100</small></strong><span>{metrics.riskLabel}</span></div><div className="cc-score-track" aria-hidden="true"><span style={{ transform: `scaleX(${metrics.ignitabilityRiskScore / 100})` }} /></div>
         <dl className="cc-facts"><div><dt>Burn-rate multiplier</dt><dd data-testid="burn-multiplier">{metrics.burnRateMultiplier.toFixed(1)}× <small>Earth reference</small></dd></div><div><dt>Ignition delay*</dt><dd>{metrics.ignitionDelaySeconds} <small>s / synthetic</small></dd></div><div><dt>Toxicity index*</dt><dd>{metrics.toxicityIndex} <small>/ 100</small></dd></div></dl><p className="cc-caption">*Teaching values only. No material-specific ignition or toxicology data is loaded.</p><Link className="text-link" href="/dashboard/playbook">Review a playbook<ArrowUpRight size={15} aria-hidden="true" /></Link>
       </section></div>
+    <HabitatAnalysisPanel />
     <TelemetryCharts input={input} />
     <details className="cc-methodology"><summary>Model assumptions & limitations</summary><p>This interface uses a transparent, synthetic heuristic—not NASA BASS-II, Saffire, or FLEX empirical curves. The 3.5× lunar burn-rate example comes from the project brief, not validated measurements. Oxygen and pressure change demonstration weights; material profiles are synthetic. Gravity controls the illustration, not a physically calibrated spread law. No scenario is certified safe.</p><p>Engineering use requires grade-specific experimental data, documented operating conditions, uncertainty analysis, and independent validation.</p></details>
   </>;

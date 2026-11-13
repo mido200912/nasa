@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="NASA.FireSafety.API/NASA.FireSafety.API.csproj" />
+  <Project Path="NASA.FireSafety.API.Tests/NASA.FireSafety.API.Tests.csproj" />
+</Solution>
