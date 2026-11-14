@@ -243,5 +243,41 @@ describe('Vulcan-X Backend & AI Engine API Tests', () => {
     },
     { timeout: 35000 }
   );
+
+  test('POST /api/v1/ai/query handles bilingual Arabic queries and retrieves deep facts', async () => {
+    const res = await app.fetch(
+      new Request('http://localhost:4000/api/v1/ai/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: 'ما هي تجربة FM2 واشتعال المواد على القمر؟',
+          environment: 'lunar_base',
+        }),
+      })
+    );
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as any;
+    expect(data.success).toBe(true);
+    expect(data.retrieved_chunks.length).toBeGreaterThan(0);
+    expect(data.retrieved_chunks.some((c: any) => c.citation_title.includes('FM2'))).toBe(true);
+  });
+
+  test('POST /api/v1/ai/query retrieves Scott SCBA 4500 psi lightweight tank facts', async () => {
+    const res = await app.fetch(
+      new Request('http://localhost:4000/api/v1/ai/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: 'How did Scott Aviation and NASA Johnson Space Center develop 4500 psi SCBA air tanks?',
+          environment: 'earth',
+        }),
+      })
+    );
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as any;
+    expect(data.success).toBe(true);
+    expect(data.retrieved_chunks.length).toBeGreaterThan(0);
+    expect(data.retrieved_chunks.some((c: any) => c.citation_title.includes('SCBA') || c.text_content.includes('4,500 psi'))).toBe(true);
+  });
 });
 

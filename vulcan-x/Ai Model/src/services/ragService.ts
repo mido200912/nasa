@@ -1,5 +1,6 @@
 import { OFFICIAL_NASA_CORPUS } from '../data/official_nasa_corpus';
 import nasaLinkIntelligence from '../data/nasa_link_intelligence.json';
+import { buildUnifiedKnowledgeCorpus } from './knowledgeIndexer';
 import type { AiProviderService } from './aiProviderService';
 import { env } from '../config/env';
 import type {
@@ -12,34 +13,80 @@ import type {
   SearchResult,
 } from '../types';
 
-/** Common synonyms dictionary to expand query semantics across space combustion domains. */
+/** Common synonyms dictionary to expand query semantics across space combustion domains in English and Arabic. */
 const SYNONYM_MAP: Record<string, string[]> = {
-  burn: ['flame', 'combustion', 'ignition', 'fire'],
-  burning: ['flame', 'combustion', 'fire', 'spread'],
-  spread: ['propagation', 'flame spread', 'growth'],
-  materials: ['solids', 'fuel', 'pmma', 'nomex', 'teflon', 'samples'],
-  material: ['solid', 'fuel', 'pmma', 'nomex', 'teflon', 'sample'],
-  air: ['atmosphere', 'oxygen', 'o2', 'gas'],
-  tank: ['cylinder', 'vessel', 'canister', 'scba'],
-  tanks: ['cylinders', 'vessels', 'canisters', 'scba'],
-  escape: ['egress', 'evacuation', 'hatch'],
-  smoke: ['particulate', 'particles', 'respirator', 'soot'],
-  choking: ['smoke', 'toxic', 'respirator', 'inhalation'],
-  extinguish: ['suppression', 'extinction', 'inert gas', 'suppressants'],
-  extinguisher: ['suppression', 'inert gas', 'suppressants'],
-  suit: ['attire', 'turnout', 'gear', 'protective'],
-  gear: ['attire', 'turnout', 'suit', 'protective'],
-  incident: ['accident', 'fire', 'apollo', 'mir'],
-  incidents: ['accidents', 'fires', 'apollo', 'mir'],
-  glenn: ['combustion science', 'bass', 'acme', 'flex'],
-  station: ['iss', 'mir', 'space station'],
+  // English semantics
+  burn: ['flame', 'combustion', 'ignition', 'fire', 'حريق', 'نار', 'لهب'],
+  burning: ['flame', 'combustion', 'fire', 'spread', 'اشتعال', 'حريق'],
+  spread: ['propagation', 'flame spread', 'growth', 'انتشار'],
+  materials: ['solids', 'fuel', 'pmma', 'nomex', 'teflon', 'samples', 'مواد'],
+  material: ['solid', 'fuel', 'pmma', 'nomex', 'teflon', 'sample', 'ماده'],
+  air: ['atmosphere', 'oxygen', 'o2', 'gas', 'هواء', 'اكسجين'],
+  tank: ['cylinder', 'vessel', 'canister', 'scba', '4500 psi', 'خزان', 'اسطوانه'],
+  tanks: ['cylinders', 'vessels', 'canisters', 'scba', '4500 psi', 'خزانات', 'اسطوانات'],
+  escape: ['egress', 'evacuation', 'hatch', 'هروب', 'اخلاء', 'بوابه'],
+  smoke: ['particulate', 'particles', 'respirator', 'soot', 'same', 'daft', 'دخان', 'سخام'],
+  choking: ['smoke', 'toxic', 'respirator', 'inhalation', 'اختناق', 'غازات'],
+  extinguish: ['suppression', 'extinction', 'inert gas', 'suppressants', 'foam', 'اطفاء', 'اخماد'],
+  extinguisher: ['suppression', 'inert gas', 'suppressants', 'foam', 'طفايه'],
+  suit: ['attire', 'turnout', 'gear', 'protective', 'pbi', 'fires', 'بدله', 'ملابس'],
+  gear: ['attire', 'turnout', 'suit', 'protective', 'معدات', 'ملابس'],
+  incident: ['accident', 'fire', 'apollo', 'mir', 'حادث', 'كارثه'],
+  incidents: ['accidents', 'fires', 'apollo', 'mir', 'حوادث'],
+  glenn: ['combustion science', 'bass', 'acme', 'flex', 'sofie', 'fm2', 'flare'],
+  station: ['iss', 'mir', 'space station', 'محطه'],
+  fm2: ['flammability', 'moon', 'lunar', 'centrifuge', '1/6g', 'sibal', 'قمر', 'قمري'],
+  sofie: ['solid fuel', 'ignition', 'extinction', 'nasa-std-6001', 'cristoforetti', 'اشتعال'],
+  mir: ['kvant-1', 'sfog', 'candle', 'latex glove', 'korzun', 'linenger', 'مير'],
+  apollo: ['apollo 1', 'apollo 13', 'hatch', 'oxygen tank', 'teflon', 'ابولو'],
+  scott: ['scba', '4500 psi', 'air tanks', 'lightweight', 'اسطوانات'],
+  brunswick: ['detector', 'incipient', 'mines', 'particles', 'false alarms', 'كاشف'],
+
+  // Arabic semantics mapping to English aerospace domain terms
+  حريق: ['fire', 'flame', 'combustion', 'ignition', 'burn', 'burning'],
+  نار: ['fire', 'flame', 'combustion', 'burn'],
+  لهب: ['flame', 'fire', 'combustion', 'spread'],
+  احتراق: ['combustion', 'burning', 'burn', 'flame', 'ignition'],
+  اشتعال: ['ignition', 'flammability', 'combustion', 'burn'],
+  اكسجين: ['oxygen', 'o2', 'oxidizer', 'pure oxygen', '100% oxygen'],
+  اوكسجين: ['oxygen', 'o2', 'oxidizer'],
+  قمر: ['lunar', 'moon', 'fm2', 'lunar_base', '1/6g'],
+  قمري: ['lunar', 'moon', 'fm2', 'lunar_base'],
+  مير: ['mir', 'kvant-1', 'sfog', 'candle', 'latex glove', 'korzun'],
+  ابولو: ['apollo', 'apollo 1', 'apollo 13', 'as-204', 'hatch'],
+  اطفاء: ['extinguish', 'suppression', 'extinction', 'suppressant', 'foam'],
+  اخماد: ['extinguish', 'suppression', 'extinction', 'inert gas'],
+  بدله: ['suit', 'attire', 'turnout', 'gear', 'project fires'],
+  ملابس: ['attire', 'turnout', 'suit', 'gear', 'project fires'],
+  اسطوانه: ['tank', 'cylinder', 'scba', 'vessel', '4500 psi'],
+  اسطوانات: ['tanks', 'cylinders', 'scba', '4500 psi'],
+  خزان: ['tank', 'cylinder', 'vessel', 'canister'],
+  دخان: ['smoke', 'soot', 'particulate', 'aerosol', 'same'],
+  سخام: ['soot', 'smoke', 'particulate', 'hydrocarbons'],
+  كاشف: ['detector', 'sensor', 'incipient', 'brunswick', 'alarm'],
+  حساس: ['sensor', 'detector', 'incipient', 'brunswick'],
+  انذار: ['alarm', 'detector', 'warning', 'incipient'],
+  جاذبيه: ['gravity', 'microgravity', 'zero-g', 'reduced-g'],
+  ميكروجرافيتي: ['microgravity', 'zero-g', 'iss'],
+  مواد: ['materials', 'material', 'solid', 'pmma', 'nomex', 'teflon'],
+  ماده: ['material', 'solid', 'fuel', 'sample', 'pmma', 'nomex'],
+  ضغط: ['pressure', 'psi', 'kpa', 'atm'],
+  تهويه: ['ventilation', 'airflow', 'flow', 'convection'],
+  حراره: ['temperature', 'thermal', 'heat', 'kelvin'],
+  تفلون: ['teflon', 'ptfe', 'insulation'],
+  نومكس: ['nomex', 'aramid', 'flame-retardant'],
+  تجربه: ['experiment', 'investigation', 'bass', 'acme', 'flex', 'sofie', 'fm2'],
+  تجارب: ['experiments', 'investigations', 'payloads', 'bass', 'acme', 'flex'],
+  هروب: ['escape', 'egress', 'hatch', 'evacuation'],
+  اخلاء: ['evacuation', 'egress', 'escape', 'hatch'],
+  بوابه: ['hatch', 'unified hatch', 'egress'],
 };
 
 /**
  * Intelligent Source-first retrieval, Link Navigator & Generative AI Synthesis over official NASA corpus.
  */
 export class RagService {
-  private readonly documents: RagChunk[] = OFFICIAL_NASA_CORPUS;
+  private readonly documents: RagChunk[] = buildUnifiedKnowledgeCorpus(OFFICIAL_NASA_CORPUS, nasaLinkIntelligence);
   private readonly linkDatabase = (nasaLinkIntelligence as any).sources || [];
   private readonly aiProvider: AiProviderService;
 
@@ -242,12 +289,20 @@ Provide a qualified, direct answer using only this context. State evidence gaps 
   }
 
   private extractTokens(input: string): string[] {
+    const normalized = this.normalizeArabic(input.toLowerCase());
     return (
-      input
-        .toLowerCase()
-        .match(/[a-z0-9_-]+/g)
-        ?.filter((token) => token.length > 2) ?? []
+      normalized
+        .match(/[\p{L}\p{N}_-]+/gu)
+        ?.filter((token) => token.length > 1) ?? []
     );
+  }
+
+  private normalizeArabic(text: string): string {
+    return text
+      .replace(/[إأآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u065F]/g, '');
   }
 
   private calculateRiskLevel(question: string, environment: EnvironmentType, chunks: RagChunk[]): RiskLevel {
