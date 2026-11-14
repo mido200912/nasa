@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useSimulationStore } from "@/components/SimulationProvider";
+import { Choice } from "@/components/dashboard/Controls";
 import { createHabitatRequest, emptyHabitatDraft, getHabitatCapabilities, habitatGravityRegimes, HabitatFormError, submitHabitatAnalysis, validateHabitatDraft, type HabitatAnalysis, type HabitatAnalysisDraft, type HabitatApiOutcome } from "@/lib/habitat-analysis";
 
 type DraftInputs = Omit<HabitatAnalysisDraft, "environmentId" | "materialId">;
@@ -76,7 +77,12 @@ export function HabitatAnalysisPanel() {
       <ScientificInput label="Pressure" id="habitat-pressure" value={inputs.pressureKPa} unit="kPa" error={errors.pressureKPa} onChange={(pressureKPa) => setInputs((current) => ({ ...current, pressureKPa }))} />
       <ScientificInput label="Temperature" id="habitat-temperature" value={inputs.temperatureCelsius} unit="°C (optional)" error={errors.temperatureCelsius} onChange={(temperatureCelsius) => setInputs((current) => ({ ...current, temperatureCelsius }))} />
       <ScientificInput label="Effective gravity" id="habitat-gravity" value={inputs.effectiveGravityG} unit="g (optional)" error={errors.effectiveGravityG} onChange={(effectiveGravityG) => setInputs((current) => ({ ...current, effectiveGravityG }))} />
-      <div className="cc-field"><label htmlFor="habitat-gravity-regime">Gravity regime</label><select id="habitat-gravity-regime" className="cc-select-native" value={inputs.gravityRegime} onChange={(event) => setInputs((current) => ({ ...current, gravityRegime: event.target.value as DraftInputs["gravityRegime"] }))}><option value="">Unknown / not supplied</option>{habitatGravityRegimes.map((regime) => <option key={regime} value={regime}>{regime}</option>)}</select>{errors.gravityRegime ? <FieldError value={errors.gravityRegime} /> : null}</div>
+      {/* Radix items cannot use ""; the UI sentinel maps back to the existing missing-input value. */}
+      <div><Choice id="habitat-gravity-regime" label="Gravity regime" value={inputs.gravityRegime || "not_supplied"} disabled={loading} onChange={(value) => {
+        if (value === "not_supplied" || habitatGravityRegimes.some((regime) => regime === value)) {
+          setInputs((current) => ({ ...current, gravityRegime: value === "not_supplied" ? "" : value as DraftInputs["gravityRegime"] }));
+        }
+      }} options={[{ value: "not_supplied", label: "Unknown / not supplied" }, ...habitatGravityRegimes.map((regime) => ({ value: regime, label: regime }))]} />{errors.gravityRegime ? <FieldError value={errors.gravityRegime} /> : null}</div>
     </fieldset>
     <p className="cc-caption">Oxygen is expressed as oxygen volume percentage. Pressure is expressed in kPa. Blank fields remain unknown; the form never replaces them with illustrative values or zeros.</p>
     <button type="submit" className="button" disabled={loading || !canSubmit}>{approval?.enabled ? "Submit persisted Habitat Analysis" : "Submit persisted Habitat Analysis (scientific fixture required)"}</button>

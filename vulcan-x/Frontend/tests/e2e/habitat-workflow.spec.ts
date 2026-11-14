@@ -28,6 +28,72 @@ async function prepare(page: Page) {
 
 test.beforeEach(async ({ page }) => { await mockCatalog(page); });
 
+test("gravity uses the shared custom select, supports keyboard selection and keeps unknown distinct from Unspecified", async ({ page }) => {
+  await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ json: { enabled: true } }));
+  const bodies: { gravityRegime: string | null }[] = [];
+  await page.route("**/api/backend/habitat-analyses", async (route) => {
+    bodies.push(route.request().postDataJSON());
+    await route.fulfill({ status: 201, json: analysis });
+  });
+  await page.goto("/dashboard");
+  await prepare(page);
+  const gravity = page.getByRole("combobox", { name: "Gravity regime", exact: true });
+  await expect(gravity).toHaveAttribute("data-slot", "select-trigger");
+  await expect(gravity).toHaveText("Unknown / not supplied");
+  await gravity.focus();
+  await page.keyboard.press("Space");
+  const list = page.getByRole("listbox");
+  await expect(list).toHaveClass(/cc-menu/);
+  await expect(list.getByRole("option")).toHaveCount(6);
+  await page.keyboard.press("r");
+  await expect(page.getByRole("option", { name: "ReducedGravity", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(gravity).toHaveText("ReducedGravity");
+  await expect(gravity).toBeFocused();
+  await gravity.click();
+  await page.getByRole("option", { name: "Unspecified", exact: true }).click();
+  await page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Persisted analysis result" })).toBeVisible();
+  expect(bodies[0].gravityRegime).toBe("Unspecified");
+  await gravity.click();
+  await page.getByRole("option", { name: "Unknown / not supplied", exact: true }).click();
+  await page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true }).click();
+  await expect.poll(() => bodies.length).toBe(2);
+  expect(bodies[1].gravityRegime).toBeNull();
+  await gravity.click();
+  await page.getByRole("option", { name: "EarthLike", exact: true }).focus();
+  await page.keyboard.press("Escape");
+  await expect(gravity).toHaveText("Unknown / not supplied");
+  await expect(gravity).toBeFocused();
+});
+
+for (const width of [320, 768, 1440]) {
+  test(`gravity custom menu fits at ${width}px with enlarged text and does not shift the form`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 960 });
+    await page.goto("/dashboard");
+    await page.locator("html").evaluate((element) => { element.style.fontSize = "200%"; });
+    const gravity = page.getByRole("combobox", { name: "Gravity regime", exact: true });
+    await expect(gravity).toHaveAttribute("data-slot", "select-trigger");
+    await gravity.scrollIntoViewIfNeeded();
+    const before = await gravity.boundingBox();
+    await gravity.click();
+    const list = page.getByRole("listbox");
+    await expect(list).toBeVisible();
+    const box = await list.boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(8);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(width - 8);
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(960);
+    // Radix hides the background from the accessibility tree while its menu is open.
+    const openTrigger = await page.locator("#habitat-gravity-regime").boundingBox();
+    expect(Math.abs(openTrigger!.x - before!.x)).toBeLessThan(1);
+    await page.getByRole("option", { name: "Microgravity", exact: true }).click();
+    await expect(gravity).toHaveText("Microgravity");
+    await expect(gravity).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  });
+}
+
 test("live is the default; no canvas or local simulator request runs until offline mode is explicitly selected", async ({ page }) => {
   const localRequests: string[] = [];
   page.on("request", (request) => { if (request.url().includes("/api/v1/simulator")) localRequests.push(request.url()); });
@@ -94,7 +160,9 @@ test("cancellation and workspace changes abort pending analysis without letting 
       : original(input, init);
   });
   await page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Gravity regime", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Cancel analysis request", exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Gravity regime", exact: true })).toBeEnabled();
   await expect(page.getByRole("heading", { name: "Analysis request cancelled" })).toBeVisible();
   await page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true }).click();
   await page.evaluate((result) => {
