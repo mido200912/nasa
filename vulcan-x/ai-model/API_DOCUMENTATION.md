@@ -634,7 +634,7 @@ The backend enforces uniform error schemas with clear status codes:
 
 ## Environment Variables
 
-Configure your `.env` file in `vulcan-x/Ai Model/.env`:
+Configure your `.env` file in `vulcan-x/ai-model/.env`:
 
 ```env
 # Server
@@ -662,7 +662,7 @@ KEY_COOLDOWN_MS=60000
 
 ```bash
 # 1. Navigate to AI Model directory
-cd "vulcan-x/Ai Model"
+cd vulcan-x/ai-model
 
 # 2. Install dependencies via Bun
 bun install

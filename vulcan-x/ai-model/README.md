@@ -32,7 +32,7 @@ In production (`NODE_ENV=production`), `/test` and key-management endpoints retu
 ## 🛠️ Architecture & Features
 
 ```
-vulcan-x/Ai Model/
+vulcan-x/ai-model/
 ├── src/
 │   ├── config/
 │   │   └── env.ts                     # Server-only configuration & 5 key slots
@@ -168,7 +168,7 @@ Development-only status for five key slots. Hidden in production and never proxi
 
 ### 1. Install Dependencies
 ```bash
-cd "vulcan-x/Ai Model"
+cd vulcan-x/ai-model
 bun install
 ```
 
