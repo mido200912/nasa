@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpRight, Droplets, Flame, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useSimulationStore } from "@/components/SimulationProvider";
@@ -16,6 +16,19 @@ const FlameSimulator3D = dynamic(() => import("@/components/canvas/FlameSimulato
 const TelemetryCharts = dynamic(() => import("@/components/dashboard/TelemetryCharts"), { ssr: false, loading: () => <div className="cc-loading-block" role="status">Preparing charts…</div> });
 
 export function StressTestModule() {
+  const [mode, setMode] = useState<"live" | "offline">("live");
+  return <><div className="cc-actions cc-mode-actions" role="group" aria-label="Habitat workspace mode">
+    <button type="button" className="button button-outline" aria-pressed={mode === "live"} onClick={() => setMode("live")}>Live Habitat Analysis</button>
+    <button type="button" className="button button-outline" aria-pressed={mode === "offline"} onClick={() => setMode("offline")}>Offline simulation</button>
+  </div>{mode === "live" ? <>
+    <div className="cc-page-heading"><div><h1>Habitat stress-test</h1><p>Backend analysis and saved records. No synthetic result is substituted when a service or scientific approval is unavailable.</p></div></div>
+    <section className="cc-panel" aria-label="Live analysis catalog selection"><EnvironmentSelect showIllustrative={false} /><MaterialSelect showIllustrative={false} /></section>
+    <HabitatAnalysisPanel />
+    <HabitatRecordLookup />
+  </> : <OfflineStressTestModule />}</>;
+}
+
+function OfflineStressTestModule() {
   const oxygenLevel = useSimulationStore((state) => state.oxygenLevel);
   const pressurePsi = useSimulationStore((state) => state.pressurePsi);
   const gravityG = useSimulationStore((state) => state.gravityG);
@@ -55,8 +68,6 @@ export function StressTestModule() {
       <section className="cc-panel cc-risk-panel" aria-label="Illustrative risk matrix"><div className="cc-panel-heading"><h2>Instant risk matrix</h2><span className="cc-caption">Unvalidated demo</span></div><div className="cc-score"><span>Scenario index</span><strong data-testid="dashboard-risk-score">{metrics.ignitabilityRiskScore}<small> / 100</small></strong><span>{metrics.riskLabel}</span></div><div className="cc-score-track" aria-hidden="true"><span style={{ transform: `scaleX(${metrics.ignitabilityRiskScore / 100})` }} /></div>
         <dl className="cc-facts"><div><dt>Burn-rate multiplier</dt><dd data-testid="burn-multiplier">{metrics.burnRateMultiplier.toFixed(1)}× <small>Earth reference</small></dd></div><div><dt>Ignition delay*</dt><dd>{metrics.ignitionDelaySeconds} <small>s / synthetic</small></dd></div><div><dt>Toxicity index*</dt><dd>{metrics.toxicityIndex} <small>/ 100</small></dd></div></dl><p className="cc-caption">*Teaching values only. No material-specific ignition or toxicology data is loaded.</p><Link className="text-link" href="/dashboard/playbook">Review a playbook<ArrowUpRight size={15} aria-hidden="true" /></Link>
       </section></div>
-    <HabitatAnalysisPanel />
-    <HabitatRecordLookup />
     <TelemetryCharts input={input} />
     <details className="cc-methodology"><summary>Model assumptions & limitations</summary><p>This interface uses a transparent, synthetic heuristic—not NASA BASS-II, Saffire, or FLEX empirical curves. The 3.5× lunar burn-rate example comes from the project brief, not validated measurements. Oxygen and pressure change demonstration weights; material profiles are synthetic. Gravity controls the illustration, not a physically calibrated spread law. No scenario is certified safe.</p><p>Engineering use requires grade-specific experimental data, documented operating conditions, uncertainty analysis, and independent validation.</p></details>
   </>;

@@ -4,7 +4,7 @@ import { mockCatalog } from "./helpers/catalog-fixtures";
 
 test.beforeEach(async ({ page }) => { await mockCatalog(page); });
 
-test("stress-test endpoint validates live requests", async ({ request }) => {
+test("offline teaching endpoint validates illustrative requests", async ({ request }) => {
   const data = { environment: "lunar", oxygenLevel: 30, pressurePsi: 10.2, gravityG: 0.16, materialId: "pmma_acrylic" };
   const response = await request.post("/api/v1/simulator/stress-test", { data });
   expect(response.status()).toBe(200);
@@ -19,6 +19,7 @@ for (const reducedMotion of ["reduce", "no-preference"] as const) {
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
     await page.goto("/dashboard");
+    await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
     await expect(page.locator(".cc-flame-viewport")).toHaveAttribute("data-ready", "true");
     await expect(page.getByTestId("stress-test-sync")).toContainText("Synced");
     await expect(page.getByTestId("chamber-morphology")).toContainText("Spherical Cool Plasma");
@@ -44,6 +45,7 @@ test("slider feedback is immediate while network calls coalesce at 300ms", async
     await route.continue();
   });
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await page.clock.runFor(500);
   await expect(page.getByTestId("stress-test-sync")).toContainText("Synced");
   const initial = payloads.length;
@@ -59,6 +61,7 @@ test("slider feedback is immediate while network calls coalesce at 300ms", async
 test("API failure is visible and retry recovers without losing the scenario", async ({ page }) => {
   await page.route("**/api/v1/simulator/stress-test", (route) => route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "Unavailable" }) }));
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.getByTestId("stress-test-sync")).toContainText("Unavailable");
   await expect(page.getByRole("button", { name: "Deploy Fine-Water-Mist Suppression", exact: true })).toBeEnabled();
   await page.unroute("**/api/v1/simulator/stress-test");
@@ -70,6 +73,7 @@ test("suppression visibly shrinks and removes the rendered flame, then restores 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.clock.install();
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await page.clock.runFor(500);
   await expect(page.getByTestId("stress-test-sync")).toContainText("Synced");
   await expect(page.locator(".cc-flame-viewport")).toHaveAttribute("data-ready", "true");
@@ -98,6 +102,7 @@ test("fallback also suppresses and reignites without WebGL", async ({ page }) =>
     } as typeof getContext;
   });
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.locator(".cc-flame-fallback svg > g")).toBeVisible();
   await page.getByRole("button", { name: "Deploy Fine-Water-Mist Suppression", exact: true }).click();
   await expect(page.locator(".cc-flame-fallback svg > path")).toBeVisible();

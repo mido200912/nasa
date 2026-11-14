@@ -135,7 +135,7 @@ ${JSON.stringify({
 
 Provide a qualified, direct answer using only this context. State evidence gaps and limitations.`;
 
-      // Preserve main's seven-second budget while cancelling actual provider work.
+      // Cancel actual provider work at the configured Knowledge deadline.
       const generationSignal = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(env.KNOWLEDGE_TIMEOUT_MS)]);
       const aiResponse = await this.aiProvider.generateCompletion(userPrompt, systemPrompt, generationSignal);
       signal?.throwIfAborted();

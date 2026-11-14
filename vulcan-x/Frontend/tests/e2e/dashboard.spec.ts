@@ -8,6 +8,7 @@ test("landing selection launches the shared Mars scenario and preserves it on re
   await page.getByRole("button", { name: "Focus Mars in explorer", exact: true }).click();
   await page.getByRole("link", { name: "Launch simulator" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.locator(".cc-telemetry")).toContainText("Mars habitat");
   await expect(page.getByRole("slider", { name: "Gravity", exact: true })).toHaveAttribute("aria-valuenow", "0.38");
   await page.getByRole("link", { name: "Planetary explorer", exact: true }).click();
@@ -16,6 +17,7 @@ test("landing selection launches the shared Mars scenario and preserves it on re
 
 test("presets, custom sliders, material changes and session reload stay synchronized", async ({ page }) => {
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.getByTestId("burn-multiplier")).toContainText("3.5×");
   await page.getByRole("combobox", { name: "Illustrative WebGL scenario", exact: true }).click();
   await page.getByRole("option", { name: "ISS lab", exact: true }).click();
@@ -25,10 +27,11 @@ test("presets, custom sliders, material changes and session reload stay synchron
   await expect(oxygen).toHaveAttribute("aria-valuenow", "40");
   await expect(page.getByRole("combobox", { name: "Illustrative WebGL scenario", exact: true })).toContainText("Custom what-if");
   await expect(page.getByRole("combobox", { name: "Environment preset", exact: true })).toHaveCount(0);
-  await expect(page.locator(".cc-telemetry")).toContainText("Active scenario / custom");
+  await expect(page.locator(".cc-telemetry")).toContainText("Offline scenario preview / custom");
   await page.getByRole("combobox", { name: "Illustrative material scenario", exact: true }).click();
   await page.getByRole("option", { name: "Teflon / PTFE", exact: true }).click();
   await page.reload();
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.getByRole("slider", { name: "Oxygen concentration", exact: true })).toHaveAttribute("aria-valuenow", "40");
   await expect(page.getByRole("combobox", { name: "Illustrative material scenario", exact: true })).toContainText("Teflon / PTFE");
   await page.getByRole("button", { name: "Reset scenario", exact: true }).click();
@@ -61,6 +64,7 @@ test("a context change cancels stale playbooks, including an active stream", asy
   await page.goto("/dashboard/playbook");
   await page.getByRole("button", { name: "Generate outline", exact: true }).click();
   await page.getByRole("link", { name: "Stress-test Atmosphere & materials", exact: true }).click();
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await page.getByRole("combobox", { name: "Illustrative WebGL scenario", exact: true }).click();
   await page.getByRole("option", { name: "Mars habitat", exact: true }).click();
   await page.getByRole("link", { name: "Safety playbook Research & review", exact: true }).click();
@@ -98,11 +102,13 @@ test("material search, empty state, source filter, comparator and simulator sele
   await page.getByRole("option", { name: "Nomex HT90-40", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "Second material", exact: true })).toContainText("Kapton wire insulation");
   await page.getByRole("link", { name: "Adjust atmosphere", exact: true }).click();
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "Illustrative material scenario", exact: true })).toContainText("PMMA acrylic");
 });
 
 test("dashboard menus do not shift content and return keyboard focus", async ({ page }) => {
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   // Radix deliberately hides the rest of the accessibility tree while open;
   // measure the same DOM heading rather than querying the hidden role.
   const heading = page.locator(".cc-page-heading h1");
@@ -120,6 +126,7 @@ test("single flame canvas honors reduced motion and offscreen rendering suspensi
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect(page.locator(".cc-flame-viewport")).toHaveAttribute("data-rendering", "on-demand");
   await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -137,6 +144,7 @@ test("simulator controls and illustration remain usable without WebGL", async ({
     } as typeof original;
   });
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.getByText("3D unavailable · accessible illustration")).toBeVisible();
   await page.getByRole("combobox", { name: "Illustrative WebGL scenario", exact: true }).click();
   await page.getByRole("option", { name: "ISS lab", exact: true }).click();

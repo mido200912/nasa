@@ -63,6 +63,28 @@ public sealed class SqlWorkflowTests(ITestOutputHelper output)
         output.WriteLine($"Seed first: {first}; seed second: {second}; tables: {JsonSerializer.Serialize(after)}");
     }
 
+    [SqlFact]
+    public async Task KnowledgeUrlCitationsRoundTripWithRealForeignKeys()
+    {
+        await using var db = await ReadyDatabase();
+        var environment = await db.SpaceEnvironments.FirstAsync(x => x.Code == "ISS");
+        var source = await db.ResearchSources.FirstAsync(x => x.CurationStatus == CurationStatus.ApprovedForDisplay && x.SourceUrl != null);
+        var unknownUrl = $"https://example.invalid/technical-citation/{Guid.NewGuid()}";
+        var ai = new ControlledAi { Query = (_, _) => Task.FromResult(new AiQueryResponse
+        {
+            Success = true, Answer = "URL persistence fixture, not live inference.",
+            Sources = [source.SourceUrl! + "#technical-fragment", unknownUrl]
+        }) };
+        var service = new KnowledgeQueryService(db, ai);
+        var created = await service.CreateAsync(new() { EnvironmentId = environment.Id, Question = $"URL SQL contract fixture {Guid.NewGuid()}" }, CancellationToken.None);
+        Assert.Contains(created.Citations, citation => citation.Source?.Id == source.Id && citation.MatchStatus == "Matched");
+        db.ChangeTracker.Clear();
+        var saved = await service.GetAsync(created.Id, CancellationToken.None);
+        Assert.Contains(saved!.Citations, citation => citation.Source?.Id == source.Id && citation.MatchStatus == "Matched");
+        Assert.Contains(saved.Citations, citation => citation.RawUrl == unknownUrl && citation.RawTitle is null && citation.MatchStatus == "Unmatched");
+        Assert.Equal(JsonSerializer.Serialize(created), JsonSerializer.Serialize(saved));
+    }
+
     [SqlTheory]
     [InlineData(0, "NoCitations")]
     [InlineData(1, "HasMatchedCitations")]

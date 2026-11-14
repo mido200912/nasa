@@ -97,6 +97,32 @@ public sealed class PersistenceWorkflowTests
         Assert.Equal(AnalysisStatus.Failed, (await db.KnowledgeQueries.SingleAsync(x => x.Id == error.RecordId)).Status);
     }
 
+    [Fact]
+    public async Task Knowledge_MatchesApprovedUrls_PreservesUnmatchedUrls_AndDoesNotGuessAmbiguousSources()
+    {
+        await using var db = CatalogTestSupport.CreateContext();
+        var (environment, _) = await AddCatalogAsync(db);
+        db.ResearchSources.AddRange(
+            new ResearchSource { Title = "NASA source", SourceUrl = "https://www.nasa.gov/research/fire/", CurationStatus = CurationStatus.ApprovedForDisplay },
+            new ResearchSource { Title = "Not approved", SourceUrl = "https://www.nasa.gov/unapproved/", CurationStatus = CurationStatus.Draft },
+            new ResearchSource { Title = "Duplicate title", CurationStatus = CurationStatus.ApprovedForDisplay },
+            new ResearchSource { Title = "Duplicate title", CurationStatus = CurationStatus.ApprovedForDisplay });
+        await db.SaveChangesAsync();
+        var service = new KnowledgeQueryService(db, new StubAiClient { QueryResponse = new AiQueryResponse
+        {
+            Success = true, Answer = "Technical citation fixture, not provider inference.",
+            Sources = ["https://WWW.NASA.GOV/research/fire/#section", "https://www.nasa.gov/unapproved/", "Duplicate title", "https://www.nasa.gov/research/FIRE/"]
+        } });
+
+        var created = await service.CreateAsync(new() { EnvironmentId = environment.Id, Question = "URL citation regression" }, CancellationToken.None);
+        var saved = await service.GetAsync(created.Id, CancellationToken.None);
+        Assert.Equal(4, saved!.Citations.Count);
+        Assert.Contains(saved.Citations, x => x.MatchStatus == "Matched" && x.Source!.Title == "NASA source");
+        Assert.Contains(saved.Citations, x => x.MatchStatus == "Unmatched" && x.RawUrl == "https://www.nasa.gov/unapproved/");
+        Assert.Contains(saved.Citations, x => x.MatchStatus == "Unmatched" && x.RawTitle == "Duplicate title");
+        Assert.Contains(saved.Citations, x => x.MatchStatus == "Unmatched" && x.RawUrl == "https://www.nasa.gov/research/FIRE/");
+    }
+
     private static async Task<(SpaceEnvironment Environment, Material Material)> AddCatalogAsync(Data.FireSafetyDbContext db)
     {
         var environment = new SpaceEnvironment { Code = "ISS", Name = "ISS", EnvironmentType = EnvironmentType.OrbitalStation, IsActive = true };

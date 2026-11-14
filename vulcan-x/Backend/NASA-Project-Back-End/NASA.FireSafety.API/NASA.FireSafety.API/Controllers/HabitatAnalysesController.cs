@@ -10,6 +10,14 @@ namespace NASA.FireSafety.API.Controllers;
 [ApiController, Route("api/habitat-analyses")]
 public sealed class HabitatAnalysesController(IHabitatAnalysisService service, IOptions<HabitatSubmissionOptions> submission) : ControllerBase
 {
+    [HttpGet("capabilities")]
+    public ActionResult GetCapabilities()
+    {
+        Response.Headers.CacheControl = "no-store";
+        // Configuration is the existing approval gate, not a declaration of model validation or readiness.
+        return Ok(new { enabled = submission.Value.Enabled });
+    }
+
     [HttpPost]
     public async Task<ActionResult<HabitatAnalysisResponseDto>> Create([FromBody] CreateHabitatAnalysisRequest request, CancellationToken cancellationToken)
     {
