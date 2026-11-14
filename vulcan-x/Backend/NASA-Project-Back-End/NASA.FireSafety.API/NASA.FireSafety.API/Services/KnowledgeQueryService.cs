@@ -45,15 +45,24 @@ public sealed class KnowledgeQueryService(FireSafetyDbContext dbContext, IVulcan
             query.Status = AnalysisStatus.Completed;
             query.CompletedAt = DateTime.UtcNow;
             query.DurationMs = (int)stopwatch.ElapsedMilliseconds;
+            if (ai.Sources.Count > 100) throw new VulcanXServiceException(VulcanXFailureKind.InvalidResponse, "Too many source references.");
+            var approvedSources = await dbContext.ResearchSources
+                .Where(source => source.CurationStatus == CurationStatus.ApprovedForDisplay).ToListAsync(cancellationToken);
             for (var index = 0; index < ai.Sources.Count; index++)
             {
                 var rawSource = ai.Sources[index]?.Trim();
                 if (string.IsNullOrWhiteSpace(rawSource)) continue;
-                var matched = await CitationMatcher.MatchExactTitleAsync(dbContext, rawSource, cancellationToken);
+                var isUrl = CitationMatcher.NormalizeUrl(rawSource) is not null;
+                if (rawSource.Length > (isUrl ? 2000 : 500))
+                    throw new VulcanXServiceException(VulcanXFailureKind.InvalidResponse, "Source reference exceeds the storage contract.");
+                var matched = CitationMatcher.Match(approvedSources, rawSource);
                 query.Citations.Add(new KnowledgeCitation
                 {
                     MatchStatus = matched is null ? CitationMatchStatus.Unmatched : CitationMatchStatus.Matched,
-                    ResearchSourceId = matched?.Id, RawTitle = matched is null ? rawSource : null, SortOrder = query.Citations.Count
+                    ResearchSourceId = matched?.Id, ResearchSource = matched,
+                    RawTitle = matched is null && !isUrl ? rawSource : null,
+                    RawUrl = matched is null && isUrl ? rawSource : null,
+                    SortOrder = query.Citations.Count
                 });
             }
             query.GroundingStatus = query.Citations.Count == 0 ? KnowledgeGroundingStatus.NoCitations : query.Citations.Any(x => x.MatchStatus == CitationMatchStatus.Matched) ? KnowledgeGroundingStatus.HasMatchedCitations : KnowledgeGroundingStatus.HasOnlyUnmatchedCitations;

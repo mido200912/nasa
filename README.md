@@ -4,7 +4,8 @@ NASA Space Apps 2026 research/educational fire-safety project.
 
 - [Frontend setup](vulcan-x/Frontend/README.md)
 - [ASP.NET Core 8 / SQL Server setup](vulcan-x/Backend/NASA-Project-Back-End/README.md)
-- [Private Bun / OpenRouter service](vulcan-x/Ai%20Model/README.md)
+- [Private Bun / OpenRouter service](vulcan-x/ai-model/README.md)
+- [Local startup and latest integration changes](vulcan-x/Backend/NASA-Project-Back-End/docs/integration/connected-workflows-2026-11-14.md)
 - [Current integration audit and verification](vulcan-x/Backend/NASA-Project-Back-End/docs/integration/integration-audit-2026-11-13.md)
 - [Genuine OpenRouter inference and SQL/browser evidence](vulcan-x/Backend/NASA-Project-Back-End/docs/integration/openrouter-inference-verification-2026-11-13.md)
 - [Milestone 7 production readiness and deployment preparation](vulcan-x/Backend/NASA-Project-Back-End/docs/deployment/milestone-7-production-readiness-report.md)

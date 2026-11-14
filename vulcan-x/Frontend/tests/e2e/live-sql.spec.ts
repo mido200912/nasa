@@ -31,6 +31,7 @@ test.describe("live SQL integration", () => {
   });
 
   test("real browser provider Knowledge POST and saved-ID retrieval", async ({ page, request }) => {
+    test.setTimeout(90000); // Real provider latency must fit the 60s API / 75s proxy contract.
     test.skip(process.env.FIRE_SAFETY_LIVE_FAILURE === "1", "Vulcan-X intentionally unavailable for separate failure test.");
     test.skip(process.env.FIRE_SAFETY_LIVE_PROVIDER !== "1", "Genuine provider credentials/inference must be explicitly configured; no local-text success fallback.");
     expect(process.env.FIRE_SAFETY_TIMING_FIXTURE).not.toBe("1");
@@ -133,6 +134,24 @@ test.describe("live SQL integration", () => {
     const response = await request.post("/api/backend/habitat-analyses", { data: { environmentId: environments[0].id, materialId: materials.items[0].id } });
     expect(response.status()).toBe(422);
     expect((await response.json()).errorCode).toBe("HABITAT_FIXTURE_NOT_APPROVED");
+  });
+
+  test("retrieves an actual failed provider record without making another model request", async ({ page, request }) => {
+    const id = process.env.FIRE_SAFETY_FAILED_QUERY_ID;
+    test.skip(!id, "Supply the retained ID from a real failed-provider run; no fake record is created.");
+    const response = await request.get(`/api/backend/knowledge/queries/${id}`);
+    expect(response.status()).toBe(200);
+    const saved = await response.json();
+    expect(saved.status).toBe("Failed");
+    expect(saved.answer).toBeNull();
+    expect(saved.citations).toEqual([]);
+    await page.goto("/dashboard/playbook");
+    await page.getByRole("button", { name: "Live Knowledge", exact: true }).click();
+    await page.getByLabel("Persisted query ID").fill(id!);
+    await page.getByRole("button", { name: "Retrieve", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Persisted Knowledge response" })).toBeVisible();
+    await expect(page.getByText("No persisted answer is available for this query.", { exact: true })).toBeVisible();
+    console.log(`REAL failed provider record retrieved: ${saved.id}, ${saved.error.code}`);
   });
 
   test("real unavailable Vulcan-X persists a Failed query and exposes its saved ID safely", async ({ page, request }) => {

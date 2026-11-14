@@ -48,7 +48,6 @@
 .cc-habitat-analysis, .cc-habitat-result { margin-top: 24px; }
 .cc-habitat-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
 .cc-readonly-value { display: block; min-height: 48px; padding: 12px; border: 1px solid var(--color-line-strong); border-radius: 4px; color: var(--color-body); }
-.cc-select-native { width: 100%; min-height: 48px; border: 1px solid var(--color-line-strong); border-radius: 4px; background: var(--color-panel); color: var(--color-text); padding: 10px 12px; font: inherit; }
 .cc-field-error { margin: 0; color: var(--color-secondary); font-size: var(--text-caption); }
 .cc-field > label, .cc-field-heading label, .cc-console form > label { display: block; color: var(--color-body); font-size: var(--text-label); font-weight: 500; }
 .cc-select[data-slot="select-trigger"] { width: 100%; min-width: 0; height: auto; min-height: 48px; padding: 10px 12px; border-radius: 4px; border: 1px solid var(--color-line-strong); background: var(--color-panel); color: var(--color-text); box-shadow: none; font-size: var(--text-label); }

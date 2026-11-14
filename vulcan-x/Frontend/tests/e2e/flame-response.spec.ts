@@ -13,6 +13,7 @@ test("SVG fallback responds to oxygen, pressure, gravity and material too", asyn
     } as typeof original;
   });
   await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   const envelope = page.locator(".cc-flame-fallback svg > g");
   await expect(envelope).toBeVisible();
   const initial = await envelope.getAttribute("transform");
@@ -42,6 +43,7 @@ for (const width of [375, 1440]) {
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
     await page.goto("/dashboard");
+    await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
     await expect(page.locator(".cc-flame-viewport")).toHaveAttribute("data-ready", "true");
 
     await sliderExtreme(page, "Oxygen concentration", "Home");

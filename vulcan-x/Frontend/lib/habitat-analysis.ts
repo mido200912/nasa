@@ -56,6 +56,14 @@ export type HabitatResult = {
 export type ProblemDetails = { status: number; title: string; detail?: string; errorCode?: string; traceId?: string; analysisId?: string; errors?: Record<string, string[]> };
 export type HabitatApiOutcome = { analysis: HabitatAnalysis } | { problem: ProblemDetails };
 
+export async function getHabitatCapabilities(signal?: AbortSignal): Promise<{ enabled: boolean }> {
+  const response = await fetch("/api/backend/habitat-analyses/capabilities", { signal, cache: "no-store" });
+  const body: unknown = await response.json();
+  if (!response.ok || !isRecord(body) || typeof body.enabled !== "boolean")
+    throw new Error("The backend approval state is unavailable. Live submission remains disabled.");
+  return { enabled: body.enabled };
+}
+
 export const emptyHabitatDraft = (environmentId: number | null, materialId: number | null): HabitatAnalysisDraft => ({
   environmentId,
   materialId,

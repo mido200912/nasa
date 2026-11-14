@@ -13,6 +13,7 @@ const allowedBackendPaths = [
   /^\/api\/sources\/\d+$/,
   /^\/api\/technologies(?:\/\d+)?$/,
   /^\/api\/habitat-analyses(?:\/[0-9a-f-]{36})?$/i,
+  /^\/api\/habitat-analyses\/capabilities$/,
   /^\/api\/knowledge\/queries(?:\/[0-9a-f-]{36})?$/i,
 ];
 
