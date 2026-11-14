@@ -128,6 +128,7 @@ test.describe("live SQL integration", () => {
     const environments = await (await request.get("/api/backend/environments")).json();
     const materials = await (await request.get("/api/backend/materials")).json();
     await page.goto("/dashboard");
+    await page.getByRole("button", { name: "Live Habitat Analysis", exact: true }).click();
     await expect(page.locator("#habitat-oxygen")).toHaveValue("");
     await expect(page.locator("#habitat-pressure")).toHaveValue("");
     await expect(page.getByRole("button", { name: "Submit persisted Habitat Analysis (scientific fixture required)", exact: true })).toBeDisabled();

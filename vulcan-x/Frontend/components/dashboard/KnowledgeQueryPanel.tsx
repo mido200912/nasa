@@ -84,8 +84,8 @@ function KnowledgeResult({ outcome, loading }: { outcome: KnowledgeOutcome | nul
   return <KnowledgeQueryResult query={outcome.query} />;
 }
 
-export function KnowledgeQueryResult({ query }: { query: KnowledgeQuery }) {
-  return <section className="cc-panel cc-protocol" aria-live="polite"><div className="cc-panel-heading"><div><h2>Persisted Knowledge response</h2><p className="cc-caption">Query ID: {query.id}</p></div><span className="cc-tag">{query.status}</span></div>
+export function KnowledgeQueryResult({ query, heading = "Persisted Knowledge response" }: { query: KnowledgeQuery; heading?: string }) {
+  return <section className="cc-panel cc-protocol" aria-live="polite"><div className="cc-panel-heading"><div><h2>{heading}</h2><p className="cc-caption">Query ID: {query.id}</p></div><span className="cc-tag">{query.status}</span></div>
     {query.isMock ? <p className="cc-caption">Mock response — not a live AI result or scientific validation.</p> : null}
     <p className="cc-caption">{query.generation?.mode === "ProviderInference"
       ? `Generation: provider inference reported by Vulcan-X · ${query.generation.provider} · ${query.generation.model}. Not scientific validation.`

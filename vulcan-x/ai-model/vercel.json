@@ -1,4 +1,5 @@
 {
+  "framework": "bun",
   "bunVersion": "1.4.x"
 }
 

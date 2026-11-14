@@ -13,6 +13,20 @@
 
 This service is a private upstream of ASP.NET Core, not a browser API. It binds to loopback by default (`VULCANX_BIND_HOST=127.0.0.1`). Container deployments must select an explicitly private interface/network; do not publish diagnostics, `/test`, key-status, or key-reset through the frontend/backend allowlist.
 
+### Vercel routing
+
+Use the **Bun framework preset** with Root Directory `vulcan-x/ai-model`.
+`vercel.json` pins the preset and Bun runtime; `server.ts` starts the single
+`Bun.serve()` handler. Do not add a separate file-based `api/index.ts` adapter:
+it competes with the native server's `/api/*` routes and can leave health
+checks working while `/api/v1/ai/query` returns Vercel's `NOT_FOUND`.
+
+After deployment, verify `/health/live` and `/api/v1/datasets` return 200.
+A POST of `{}` to `/api/v1/ai/query` must return the application's 400 JSON
+validation response, not a platform 404; this check does not call the AI provider.
+Provider readiness alone is not proof of successful inference. Verify one
+explicit educational Knowledge request end to end before claiming AI availability.
+
 Genuine direct OpenRouter inference and a browser → Next.js → .NET 8 → Bun → OpenRouter → SQL → browser round-trip were verified on 13 November 2026 using the unchanged configured model. See [actual model, query ID, answer-hash and regression evidence](../Backend/NASA-Project-Back-End/docs/integration/openrouter-inference-verification-2026-11-13.md). Credentials remain owner-managed in the ignored local `.env`, never bundled with this repository.
 
 Knowledge uses locally indexed corpus excerpts and NASA link intelligence as context for OpenRouter synthesis. Generation defaults to a 45-second cancellation budget (`KNOWLEDGE_TIMEOUT_MS`), allowing a complete 40-second provider attempt within the 55-second provider / 60-second backend / 75-second frontend budgets. **There is no deterministic Knowledge fallback:** missing/exhausted credentials return 503, invalid final output returns 502, and the generation deadline returns 504. Caller cancellation is propagated. A successful response includes the actual returned model identity in `generation`; this is provider-reported provenance, not scientific validation. Its `sources` contain retrieved URLs, not proof that a model cited or verified them. The backend matches approved URLs or legacy titles without guessing ambiguous records; unmatched URLs remain unverified.

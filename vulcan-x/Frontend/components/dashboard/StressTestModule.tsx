@@ -8,6 +8,7 @@ import { useSimulationStore } from "@/components/SimulationProvider";
 import { EnvironmentSelect, MaterialSelect, ParameterSlider } from "@/components/dashboard/Controls";
 import { HabitatAnalysisPanel } from "@/components/dashboard/HabitatAnalysisPanel";
 import { HabitatRecordLookup } from "@/components/dashboard/HabitatRecordLookup";
+import { ExperimentalDemoPanel } from "@/components/dashboard/ExperimentalDemoPanel";
 import { calculateSimulation, materialCatalog } from "@/lib/simulation";
 import { chamberLift } from "@/lib/stress-test";
 import styles from "./StressTestModule.module.css";
@@ -16,11 +17,15 @@ const FlameSimulator3D = dynamic(() => import("@/components/canvas/FlameSimulato
 const TelemetryCharts = dynamic(() => import("@/components/dashboard/TelemetryCharts"), { ssr: false, loading: () => <div className="cc-loading-block" role="status">Preparing charts…</div> });
 
 export function StressTestModule() {
-  const [mode, setMode] = useState<"live" | "offline">("live");
+  const [mode, setMode] = useState<"demo" | "live" | "offline">("demo");
   return <><div className="cc-actions cc-mode-actions" role="group" aria-label="Habitat workspace mode">
+    <button type="button" className="button button-outline" aria-pressed={mode === "demo"} onClick={() => setMode("demo")}>Experimental AI demo</button>
     <button type="button" className="button button-outline" aria-pressed={mode === "live"} onClick={() => setMode("live")}>Live Habitat Analysis</button>
     <button type="button" className="button button-outline" aria-pressed={mode === "offline"} onClick={() => setMode("offline")}>Offline simulation</button>
-  </div>{mode === "live" ? <>
+  </div>{mode === "demo" ? <>
+    <div className="cc-page-heading"><div><h1>Habitat stress-test</h1><p>Ask AI about hypothetical conditions. Educational explanations are not validated fire-safety predictions.</p></div></div>
+    <ExperimentalDemoPanel />
+  </> : mode === "live" ? <>
     <div className="cc-page-heading"><div><h1>Habitat stress-test</h1><p>Backend analysis and saved records. No synthetic result is substituted when a service or scientific approval is unavailable.</p></div></div>
     <section className="cc-panel" aria-label="Live analysis catalog selection"><EnvironmentSelect showIllustrative={false} /><MaterialSelect showIllustrative={false} /></section>
     <HabitatAnalysisPanel />

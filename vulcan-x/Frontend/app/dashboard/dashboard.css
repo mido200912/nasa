@@ -46,6 +46,11 @@
 .cc-catalog-selector { display: grid; gap: 12px; margin-bottom: 24px; }
 .cc-catalog-selector > .cc-field { margin-bottom: 0; }
 .cc-habitat-analysis, .cc-habitat-result { margin-top: 24px; }
+.cc-demo { display: grid; gap: 24px; }
+.cc-demo fieldset { min-width: 0; }
+.cc-demo-ack { display: flex; align-items: start; gap: 12px; margin: 16px 0; color: var(--color-body); font-size: var(--text-label); line-height: 1.65; }
+.cc-demo-ack input { flex: 0 0 auto; width: 20px; height: 20px; margin-top: 3px; accent-color: var(--color-accent); }
+.cc-demo .cc-error, .cc-demo .cc-markdown, .cc-demo .cc-protocol { overflow-wrap: anywhere; min-width: 0; }
 .cc-habitat-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
 .cc-readonly-value { display: block; min-height: 48px; padding: 12px; border: 1px solid var(--color-line-strong); border-radius: 4px; color: var(--color-body); }
 .cc-field-error { margin: 0; color: var(--color-secondary); font-size: var(--text-caption); }

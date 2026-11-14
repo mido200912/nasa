@@ -13,6 +13,31 @@ npm run dev
 
 Open http://localhost:3000. The optional asset command downloads 2K Moon, Mars, and Earth maps, with a ten-second timeout per file. No external texture or model is needed for the procedural planet shaders. Optional maps are from [Solar System Scope](https://www.solarsystemscope.com/textures/), CC BY 4.0. No GLB is required: the station ring is procedural geometry.
 
+### Experimental habitat AI demo
+
+`/dashboard` opens in **Experimental AI demo** mode. Select real catalog entries,
+type hypothetical oxygen volume percent and pressure in kPa, optionally supply
+temperature/gravity and a question, and acknowledge that the response is not a
+validated safety analysis. Inputs start blank and are never copied from offline
+WebGL presets.
+
+The demo uses the existing `/api/backend/knowledge/queries` workflow, resolving
+the selected material's actual name before submitting a bounded qualitative
+question. It persists a **Knowledge query**, not a Habitat Analysis. Responses
+retain provider provenance, mock labels, citation status, and saved query IDs.
+Errors never trigger an automatic retry or synthetic answer. A saved ID can be
+retrieved without making another inference request.
+
+**Live Habitat Analysis** remains a separate mode with its existing backend
+scientific-approval gate unchanged. **Offline simulation** remains a local,
+illustrative workflow. This demo does not enable or certify either the scientific
+Habitat endpoint or legacy simulator endpoint.
+
+The frontend needs the same server-only `FIRE_SAFETY_API_BASE_URL` and timeout
+configuration as Live Knowledge. No database migration, approval-reference
+placeholder, backend configuration change, or browser-visible provider key is
+required. Deploy the updated frontend to make this mode available on Vercel.
+
 ### Live backend setup
 
 Copy `.env.example` to ignored `.env.local` and set the server-only `FIRE_SAFETY_API_BASE_URL` to the ASP.NET Core origin from its launch settings/startup output. Never use `NEXT_PUBLIC_*` for backend addresses or provider keys. Browser requests use only allowlisted `/api/backend/*` routes; no browser CORS configuration or authentication is required. Without backend configuration the Offline Playbook and educational simulator still work.

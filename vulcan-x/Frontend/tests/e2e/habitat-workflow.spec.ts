@@ -28,6 +28,11 @@ async function prepare(page: Page) {
 
 test.beforeEach(async ({ page }) => { await mockCatalog(page); });
 
+async function openLive(page: Page) {
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Live Habitat Analysis", exact: true }).click();
+}
+
 test("gravity uses the shared custom select, supports keyboard selection and keeps unknown distinct from Unspecified", async ({ page }) => {
   await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ json: { enabled: true } }));
   const bodies: { gravityRegime: string | null }[] = [];
@@ -35,7 +40,7 @@ test("gravity uses the shared custom select, supports keyboard selection and kee
     bodies.push(route.request().postDataJSON());
     await route.fulfill({ status: 201, json: analysis });
   });
-  await page.goto("/dashboard");
+  await openLive(page);
   await prepare(page);
   const gravity = page.getByRole("combobox", { name: "Gravity regime", exact: true });
   await expect(gravity).toHaveAttribute("data-slot", "select-trigger");
@@ -70,7 +75,7 @@ test("gravity uses the shared custom select, supports keyboard selection and kee
 for (const width of [320, 768, 1440]) {
   test(`gravity custom menu fits at ${width}px with enlarged text and does not shift the form`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 });
-    await page.goto("/dashboard");
+    await openLive(page);
     await page.locator("html").evaluate((element) => { element.style.fontSize = "200%"; });
     const gravity = page.getByRole("combobox", { name: "Gravity regime", exact: true });
     await expect(gravity).toHaveAttribute("data-slot", "select-trigger");
@@ -94,10 +99,12 @@ for (const width of [320, 768, 1440]) {
   });
 }
 
-test("live is the default; no canvas or local simulator request runs until offline mode is explicitly selected", async ({ page }) => {
+test("demo is the default; the separate live gate stays closed and offline simulation remains explicit", async ({ page }) => {
   const localRequests: string[] = [];
   page.on("request", (request) => { if (request.url().includes("/api/v1/simulator")) localRequests.push(request.url()); });
   await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Experimental AI demo", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Live Habitat Analysis", exact: true }).click();
   await expect(page.getByRole("button", { name: "Live Habitat Analysis", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("canvas")).toHaveCount(0);
   await prepare(page);
@@ -109,7 +116,7 @@ test("live is the default; no canvas or local simulator request runs until offli
 
 test("approval lookup errors fail closed and can be refreshed", async ({ page }) => {
   await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ status: 503, json: { enabled: true } }));
-  await page.goto("/dashboard");
+  await openLive(page);
   await expect(page.getByText("The backend approval state is unavailable. Live submission remains disabled.", { exact: true })).toBeVisible();
   await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ json: { enabled: false } }));
   await page.getByRole("button", { name: "Refresh approval status" }).click();
@@ -123,7 +130,7 @@ test("approved contract fixture submits only explicit inputs once and renders a 
     bodies.push(route.request().postDataJSON());
     await route.fulfill({ status: 201, json: analysis });
   });
-  await page.goto("/dashboard");
+  await openLive(page);
   await expect(page.locator("#habitat-oxygen")).toHaveValue("");
   await expect(page.locator("#habitat-pressure")).toHaveValue("");
   await prepare(page);
@@ -138,7 +145,7 @@ test("approved contract fixture submits only explicit inputs once and renders a 
 test("backend failures retain their saved ID without inserting a synthetic result", async ({ page }) => {
   await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ json: { enabled: true } }));
   await page.route("**/api/backend/habitat-analyses", (route) => route.fulfill({ status: 504, json: { status: 504, title: "Analysis timed out", analysisId: id } }));
-  await page.goto("/dashboard");
+  await openLive(page);
   await prepare(page);
   await page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Analysis timed out" })).toBeVisible();
@@ -149,7 +156,7 @@ test("backend failures retain their saved ID without inserting a synthetic resul
 
 test("cancellation and workspace changes abort pending analysis without letting late results replace a new request", async ({ page }) => {
   await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ json: { enabled: true } }));
-  await page.goto("/dashboard");
+  await openLive(page);
   await prepare(page);
   await page.evaluate(() => {
     const original = window.fetch;
