@@ -1,4 +1,4 @@
-@NASA.FireSafety.API_HostAddress = http://localhost:5082
+@NASA.FireSafety.API_HostAddress =https://vulcan-x.runasp.net
 
 GET {{NASA.FireSafety.API_HostAddress}}/weatherforecast/
 Accept: application/json
