@@ -44,6 +44,10 @@ frontend and `FIRE_SAFETY_LIVE_PROVIDER=1`, then run
 `npx playwright test tests/e2e/habitat-live.spec.ts --workers=1`.
 This opt-in test creates one real Habitat Analysis and retrieves it unchanged.
 
+Results show compact condition values and an assessment excerpt by default.
+Expand the full assessment, sources, or record details as needed. Formatting
+repairs are display-only; “Original saved response” retains the exact stored text.
+
 On `/dashboard/playbook`, choose **Live Knowledge**, select a real catalog environment, and ask a question or retrieve a persisted query ID. Only question/environment reach Vulcan-X; material remains saved context. Ineffective year/language/source-count controls are not offered. The API retains its existing compatibility fields. Returned URLs (or legacy titles) can match unambiguous approved catalog sources; unmatched URLs remain visible as unverified text, not clickable validated citations. Matching is not scientific validation. Failed responses retain `queryId` for retrieval. Requests are not automatically retried: cancellation does not roll back backend persistence, and another submission can create another record.
 
 After installing dependencies and building this frontend, Windows users can launch all three local services from the repository root with `.\vulcan-x\scripts\Start-Local.ps1`. It defaults to frontend port 3012, API 5082 and Bun 4000, refuses occupied ports, and prints its own process IDs/log directory. Use `-DotNet <path-to-dotnet-8.exe>` if .NET 8 is not the active SDK. SQL must already be configured in local User Secrets or the process environment; the launcher never creates/resets databases. See [latest setup and verification](../Backend/NASA-Project-Back-End/docs/integration/connected-workflows-2026-11-14.md).

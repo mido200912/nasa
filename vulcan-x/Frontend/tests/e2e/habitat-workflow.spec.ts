@@ -59,7 +59,7 @@ test("gravity uses the shared custom select, supports keyboard selection and kee
   await gravity.click();
   await page.getByRole("option", { name: "Unspecified", exact: true }).click();
   await page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Persisted analysis result" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Analysis result", exact: true })).toBeVisible();
   expect(bodies[0].gravityRegime).toBe("Unspecified");
   await gravity.click();
   await page.getByRole("option", { name: "Unknown / not supplied", exact: true }).click();
@@ -138,9 +138,10 @@ test("main form submits explicit inputs once and renders the saved answer and pr
   await page.locator(".cc-habitat-analysis form").evaluate((element) => {
     const form = element as HTMLFormElement; form.requestSubmit(); form.requestSubmit();
   });
-  await expect(page.getByRole("heading", { name: "Persisted analysis result" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Analysis result", exact: true })).toBeVisible();
   expect(bodies).toEqual([{ environmentId: 17, materialId: 23, oxygenVolumePercent: 21, pressureKPa: 101.325, temperatureCelsius: null, gravityRegime: null, effectiveGravityG: null, additionalParameters: null, language: "en" }]);
-  await expect(page.locator(".cc-habitat-result")).toContainText("Scientific validation: Not scientifically validated");
+  await expect(page.locator(".cc-habitat-result")).toContainText("Not scientifically validated");
+  await page.locator(".cc-habitat-result").getByText("Record details", { exact: true }).click();
   await expect(page.locator(".cc-habitat-result")).toContainText("openrouter · technical-fixture");
 });
 
@@ -152,7 +153,7 @@ test("backend failures retain their saved ID without inserting a synthetic resul
   await page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Analysis timed out" })).toBeVisible();
   await expect(page.getByText(/Retained analysis ID:/)).toContainText(id);
-  await expect(page.getByRole("heading", { name: "Persisted analysis result" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Analysis result", exact: true })).toHaveCount(0);
   await expect(page.getByTestId("dashboard-risk-score")).toHaveCount(0);
 });
 
@@ -180,7 +181,7 @@ test("cancellation and workspace changes abort pending analysis without letting 
     pending[0].resolve(Response.json(result, { status: 201 }));
   }, analysis);
   await expect(page.getByRole("button", { name: "Cancel analysis request", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Persisted analysis result" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Analysis result", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   expect(await page.evaluate(() => (window as unknown as { habitatPending: { signal: AbortSignal }[] }).habitatPending[1].signal.aborted)).toBe(true);
 });

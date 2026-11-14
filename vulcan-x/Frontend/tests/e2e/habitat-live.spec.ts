@@ -1,5 +1,34 @@
 import { expect, test } from "@playwright/test";
 
+test("real saved report renders the simpler design without another inference request", async ({ page, request }, testInfo) => {
+  const id = process.env.FIRE_SAFETY_SAVED_HABITAT_ID;
+  test.skip(!id, "Supply an existing Habitat Analysis ID for read-only production verification.");
+  const response = await request.get(`/api/backend/habitat-analyses/${id}`);
+  expect(response.status()).toBe(200);
+  const saved = await response.json();
+  expect(saved.status).toBe("Completed");
+  const posts: string[] = [];
+  page.on("request", (r) => { if (r.method() === "POST" && r.url().includes("/habitat-analyses")) posts.push(r.url()); });
+  await page.goto("/dashboard");
+  await page.getByLabel("Saved analysis ID", { exact: true }).fill(id!);
+  await page.getByRole("button", { name: "Retrieve analysis", exact: true }).click();
+  const result = page.locator(".cc-habitat-result");
+  await expect(result.getByRole("heading", { name: "Analysis result", exact: true })).toBeVisible();
+  await expect(result).toContainText("Not scientifically validated");
+  const expand = result.getByRole("button", { name: "Read full assessment" });
+  if (await expand.count()) {
+    await expect(expand).toHaveAttribute("aria-expanded", "false");
+    await testInfo.attach("compact-real-assessment", { body: await result.screenshot(), contentType: "image/png" });
+    await expand.click();
+    await expect(result.locator("[data-report-body]")).not.toContainText("**");
+  }
+  await result.getByText("Record details", { exact: true }).click();
+  await result.getByText("Original saved response", { exact: true }).click();
+  await expect(result.locator("pre")).toHaveText(saved.result.explanation);
+  expect(posts).toEqual([]);
+  console.log(`Read-only report verification: ${id}, original answer unchanged, no inference request.`);
+});
+
 // Opt-in only: real backend, real database and actual provider inference, no routes mocked.
 test("real main Habitat form saves and retrieves its AI assessment", async ({ page }, testInfo) => {
   test.skip(process.env.FIRE_SAFETY_LIVE_PROVIDER !== "1", "Requires authorized live provider and backend deployment.");
@@ -32,7 +61,7 @@ test("real main Habitat form saves and retrieves its AI assessment", async ({ pa
   expect(created.generation).toMatchObject({ mode: "ProviderInference", provider: "openrouter" });
   expect(created.generation.model.length).toBeGreaterThan(0);
   expect(created.inputs.temperatureCelsius).toMatchObject({ value: 22, origin: "UserProvided" });
-  await expect(page.getByRole("heading", { name: "Persisted analysis result" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Analysis result", exact: true })).toBeVisible();
   await page.getByLabel("Saved analysis ID", { exact: true }).fill(created.id);
   const retrieved = page.waitForResponse(r => r.url().endsWith(`/api/backend/habitat-analyses/${created.id}`));
   await page.getByRole("button", { name: "Retrieve analysis", exact: true }).click();
@@ -42,7 +71,7 @@ test("real main Habitat form saves and retrieves its AI assessment", async ({ pa
   expect(saved.result).toEqual(created.result);
   expect(saved.generation).toEqual(created.generation);
   expect(saved.inputs).toEqual(created.inputs);
-  await expect(page.getByRole("heading", { name: "Persisted analysis result" })).toHaveCount(2);
+  await expect(page.getByRole("heading", { name: "Analysis result", exact: true })).toHaveCount(2);
   const evidence = { target: testInfo.project.use.baseURL, mocked: false, id: created.id, httpStatus: response.status(), retrievalStatus: savedResponse.status(), status: saved.status, generation: saved.generation, answerCharacters: saved.result.explanation.length, citations: saved.result.citations.length, sameAnswer: saved.result.explanation === created.result.explanation };
   console.log(JSON.stringify(evidence, null, 2));
   await testInfo.attach("habitat-live-evidence", { body: JSON.stringify(evidence, null, 2), contentType: "application/json" });

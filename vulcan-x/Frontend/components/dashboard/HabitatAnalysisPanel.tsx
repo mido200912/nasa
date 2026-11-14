@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { prepareHabitatReport } from "@/lib/habitat-report";
+import styles from "./HabitatAnalysisResult.module.css";
 import { useSimulationStore } from "@/components/SimulationProvider";
 import { Choice } from "@/components/dashboard/Controls";
 import { createHabitatRequest, emptyHabitatDraft, getHabitatCapabilities, habitatGravityRegimes, HabitatFormError, submitHabitatAnalysis, validateHabitatDraft, type HabitatAnalysis, type HabitatAnalysisDraft, type HabitatApiOutcome } from "@/lib/habitat-analysis";
@@ -108,20 +111,64 @@ function FieldError({ value }: { value: string }) { return <p className="cc-fiel
 
 export function HabitatAnalysisResultView({ analysis }: { analysis: HabitatAnalysis }) {
   const result = analysis.result;
-  return <section className="cc-panel cc-habitat-result" aria-live="polite">
-    <div className="cc-panel-heading"><div><h2>Persisted analysis result</h2><p className="cc-caption">Record {analysis.id}</p></div><span className="cc-tag">{analysis.status}</span></div>
-    <p><strong>{analysis.environment.name}</strong> · <strong>{analysis.material.name}</strong></p>
-    {analysis.generation?.mode === "ProviderInference" ? <p className="cc-caption">AI provider / model: {analysis.generation.provider} · {analysis.generation.model}</p> : null}
-    <dl className="cc-facts"><div><dt>Oxygen</dt><dd>{formatInput(analysis.inputs.oxygenVolumePercent)}</dd></div><div><dt>Pressure</dt><dd>{formatInput(analysis.inputs.pressureKPa)}</dd></div><div><dt>Temperature</dt><dd>{formatInput(analysis.inputs.temperatureCelsius)}</dd></div><div><dt>Gravity</dt><dd>{analysis.inputs.gravity.regime ?? "Unknown"} · {analysis.inputs.gravity.origin}</dd></div></dl>
+  const [expanded, setExpanded] = useState(false);
+  const reportId = useId();
+  const report = prepareHabitatReport(result?.explanation ?? "");
+  const gravity = analysis.inputs.gravity;
+  return <section className={`cc-panel cc-habitat-result ${styles.report}`} aria-label="Habitat analysis result" aria-live="polite">
+    <header className={styles.header}>
+      <div><h2>Analysis result</h2><p className={styles.context}>{analysis.environment.name} · {analysis.material.name}</p></div>
+      <span className={styles.status}>{analysis.status}</span>
+    </header>
+    <p className={styles.notice}><strong>{!result ? "Analysis record" : result.isMock ? "Mock response" : "AI assessment"}</strong><span>Not scientifically validated</span></p>
+    <dl className={styles.conditions}>
+      <div><dt>Oxygen</dt><dd>{inputWithUnit(analysis.inputs.oxygenVolumePercent.value, "%")}</dd></div>
+      <div><dt>Pressure</dt><dd>{inputWithUnit(analysis.inputs.pressureKPa.value, " kPa")}</dd></div>
+      <div><dt>Temperature</dt><dd>{inputWithUnit(analysis.inputs.temperatureCelsius.value, " °C")}</dd></div>
+      <div><dt>Gravity</dt><dd>{gravity.effectiveGravityG !== null ? <>{gravity.effectiveGravityG} g{gravity.regime ? <small>{gravity.regime}</small> : null}</> : gravity.regime ?? "Not supplied"}</dd></div>
+    </dl>
     {analysis.error ? <div className="cc-error" role="alert"><p>{analysis.error.message ?? "The persisted analysis failed."}</p><p className="cc-caption">{analysis.error.code ?? "No backend error code supplied."}</p></div> : null}
-    {result ? <><p><strong>Basis:</strong> {result.analysisBasis ?? "Unknown"}</p><p><strong>Scientific validation:</strong> {result.isScientificallyValidated ? "Validated" : "Not scientifically validated"}</p><div className="cc-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>{result.explanation ?? ""}</ReactMarkdown></div>{result.limitations ? <p className="cc-caption">{result.limitations}</p> : null}{result.factors.length ? <><h3>Factors</h3><ul>{result.factors.map((factor, index) => <li key={`${factor.name}-${index}`}><strong>{factor.name}</strong>{factor.description ? ` — ${factor.description}` : ""}</li>)}</ul></> : null}<h3>Sources</h3>{result.citations.length ? <ul>{result.citations.map((citation, index) => <li key={`${citation.matchStatus}-${index}`}>{citation.source ? <>{citation.matchStatus}: {citation.source.url && safeUrl(citation.source.url) ? <a href={citation.source.url} target="_blank" rel="noreferrer">{citation.source.title}</a> : citation.source.title}</> : <>{citation.matchStatus}: {citation.rawTitle ?? (citation.rawUrl && safeUrl(citation.rawUrl) ? <a href={citation.rawUrl} target="_blank" rel="noreferrer">{citation.rawUrl}</a> : "Unresolved reference")}</>}</li>)}</ul> : <p className="cc-caption">No structured citations were returned for this analysis.</p>}</> : null}
-    <p className="cc-caption">{analysis.disclaimer}</p>
+    {result ? <div className={styles.reading}>
+      <h3>{report.hasMore && !expanded ? "Assessment preview" : "Assessment"}</h3>
+      <div id={reportId} data-report-body>
+        {report.hasMore && !expanded ? <p className={styles.preview}>{report.preview}</p> : report.markdown
+          ? <div className={styles.prose}><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml components={{ img: () => null }}>{report.markdown}</ReactMarkdown></div>
+          : <p className={styles.preview}>No assessment text is available for this record.</p>}
+      </div>
+      {report.hasMore ? <button type="button" className={styles.expand} aria-expanded={expanded} aria-controls={reportId} onClick={() => setExpanded((value) => !value)}>
+        {expanded ? "Show less" : "Read full assessment"}<ChevronDown size={16} aria-hidden="true" />
+      </button> : null}
+    </div> : null}
+    <div className={styles.disclosures}>
+      {result ? <details className={styles.disclosure}>
+        <summary><span>Sources</span><span className={styles.count}>{result.citations.length}</span></summary>
+        {result.citations.length ? <><p className={styles.detailCopy}>Retrieved references, not validation of these exact conditions.</p><ul className={styles.sourceList}>{result.citations.map((citation, index) => {
+          const url = citation.source?.url ?? citation.rawUrl;
+          const title = citation.source?.title ?? citation.rawTitle ?? (url && safeUrl(url) ? new URL(url).hostname.replace(/^www\./, "") : "Unresolved reference");
+          return <li key={`${citation.matchStatus}-${index}`}>
+            {url && safeUrl(url) ? <a href={url} target="_blank" rel="noreferrer">{title}</a> : title}
+            <small>{citation.matchStatus === "Matched" ? "Matched to catalog · not scientific validation" : "Not matched to catalog"}</small>
+          </li>;
+        })}</ul></> : <p className={styles.detailCopy}>No structured citations were returned.</p>}
+      </details> : null}
+      <details className={styles.disclosure}>
+        <summary><span>Record details</span></summary>
+        <dl className={styles.metadata}>
+          <div><dt>Analysis ID</dt><dd><code>{analysis.id}</code></dd></div>
+          {analysis.generation?.mode === "ProviderInference" ? <div><dt>Provider / model</dt><dd>{analysis.generation.provider} · {analysis.generation.model}</dd></div> : null}
+          <div><dt>Analysis basis</dt><dd>{result?.analysisBasis === "LlmInterpretationOnly" ? "Qualitative AI interpretation" : result?.analysisBasis ?? "Not supplied"}</dd></div>
+          <div><dt>Input origins</dt><dd>Oxygen: {analysis.inputs.oxygenVolumePercent.origin} · Pressure: {analysis.inputs.pressureKPa.origin} · Temperature: {analysis.inputs.temperatureCelsius.origin} · Gravity: {gravity.origin}</dd></div>
+        </dl>
+        {result?.factors.length ? <><h3>Reported factors</h3><ul className={styles.sourceList}>{result.factors.map((factor, index) => <li key={`${factor.name}-${index}`}><strong>{factor.name}</strong>{factor.description ? ` — ${factor.description}` : ""}</li>)}</ul></> : null}
+        {result?.limitations ? <p className={styles.detailCopy}>{result.limitations}</p> : null}
+        <p className={styles.detailCopy}>{analysis.disclaimer}</p>
+        {result?.explanation ? <details className={styles.original}><summary>Original saved response</summary><pre>{result.explanation}</pre></details> : null}
+      </details>
+    </div>
   </section>;
 }
 
-function formatInput(input: { value: number | null; origin: string; measurementBasis: string | null }) {
-  return `${input.value ?? "Unknown"}${input.measurementBasis ? ` ${input.measurementBasis}` : ""} · ${input.origin}`;
-}
+function inputWithUnit(value: number | null, unit: string) { return value === null ? "Not supplied" : `${value}${unit}`; }
 
 function safeUrl(value: string): boolean {
   try { return ["http:", "https:"].includes(new URL(value).protocol); } catch { return false; }
