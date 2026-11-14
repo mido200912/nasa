@@ -11,6 +11,12 @@ function integer(name: string, fallback: number, min: number, max: number) {
   if (!Number.isInteger(value) || value < min || value > max) throw new Error(`Invalid server configuration: ${name}`);
   return value;
 }
+// Native Bun deployments do not necessarily set NODE_ENV. Hosted previews
+// require the same boundaries as production; never rely on a UI project setting.
+export function isProductionDeployment() {
+  return process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+    || process.env.VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'preview';
+}
 export const env = {
   PORT: Number(process.env.PORT || 4000),
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -48,5 +54,5 @@ export const env = {
 };
 if (env.PROVIDER_ATTEMPT_TIMEOUT_MS > env.PROVIDER_TIMEOUT_MS || env.KNOWLEDGE_TIMEOUT_MS > env.PROVIDER_TIMEOUT_MS)
   throw new Error('Incompatible provider timeout configuration');
-if (process.env.NODE_ENV === 'production' && env.OPENROUTER_BASE_URL !== 'https://openrouter.ai/api/v1')
+if (isProductionDeployment() && env.OPENROUTER_BASE_URL !== 'https://openrouter.ai/api/v1')
   throw new Error('Production provider URL must be the approved OpenRouter HTTPS endpoint');

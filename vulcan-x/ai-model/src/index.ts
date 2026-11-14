@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { productionBoundary } from './middleware/production';
-import { env } from './config/env';
+import { env, isProductionDeployment } from './config/env';
 import { AiProviderService } from './services/aiProviderService';
 import { RagService } from './services/ragService';
 import { PhysicsSimulatorService } from './services/physicsSimulatorService';
@@ -24,9 +24,9 @@ app.get('/health/ready', (c) => {
 });
 // Private server-to-server service: no browser CORS or production test/key tools.
 app.use('*', async (c, next) => {
-  if (process.env.NODE_ENV === 'production' && ['/test', '/api/v1/ai/key-status', '/api/v1/ai/key-reset'].includes(c.req.path))
+  if (isProductionDeployment() && ['/test', '/api/v1/ai/key-status', '/api/v1/ai/key-reset'].includes(c.req.path))
     return c.notFound();
-  if (process.env.NODE_ENV === 'production' && c.req.method === 'POST'
+  if (isProductionDeployment() && c.req.method === 'POST'
     && ['/api/v1/simulator/stress-test', '/api/v1/simulator/hazard-evaluation', '/api/v1/simulator/physics-engine'].includes(c.req.path))
     return c.json({ success: false, error: 'Legacy illustrative formulas are not approved for live scientific analysis.', errorCode: 'HABITAT_FIXTURE_NOT_APPROVED' }, 422);
   await next();

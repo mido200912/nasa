@@ -26,6 +26,9 @@ A POST of `{}` to `/api/v1/ai/query` must return the application's 400 JSON
 validation response, not a platform 404; this check does not call the AI provider.
 Provider readiness alone is not proof of successful inference. Verify one
 explicit educational Knowledge request end to end before claiming AI availability.
+Hosted route boundaries recognize `VERCEL=1` and production/preview
+`VERCEL_ENV` in addition to `NODE_ENV=production`; diagnostic endpoints and
+legacy scientific simulators stay blocked even when Bun leaves `NODE_ENV` unset.
 
 Genuine direct OpenRouter inference and a browser → Next.js → .NET 8 → Bun → OpenRouter → SQL → browser round-trip were verified on 13 November 2026 using the unchanged configured model. See [actual model, query ID, answer-hash and regression evidence](../Backend/NASA-Project-Back-End/docs/integration/openrouter-inference-verification-2026-11-13.md). Credentials remain owner-managed in the ignored local `.env`, never bundled with this repository.
 

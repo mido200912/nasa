@@ -15,9 +15,18 @@ test('Vercel uses the native Bun server without a competing file-based API funct
   expect(competingFunctions).toEqual([]);
 });
 
-test('production routing exposes Knowledge validation and datasets while protecting scientific and diagnostic routes', async () => {
-  const previous = process.env.NODE_ENV;
-  process.env.NODE_ENV = 'production';
+test.each([
+  { NODE_ENV: 'production', VERCEL: undefined, VERCEL_ENV: undefined },
+  { NODE_ENV: 'development', VERCEL: '1', VERCEL_ENV: undefined },
+  { NODE_ENV: undefined, VERCEL: undefined, VERCEL_ENV: 'production' },
+  { NODE_ENV: 'development', VERCEL: undefined, VERCEL_ENV: 'preview' },
+])('hosted routing protects scientific and diagnostic routes for %j', async (settings) => {
+  const keys = ['NODE_ENV', 'VERCEL', 'VERCEL_ENV'] as const;
+  const previous = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  for (const key of keys) {
+    if (settings[key] === undefined) delete process.env[key];
+    else process.env[key] = settings[key];
+  }
   try {
     const app = createApplication(new AiProviderService([]));
     expect((await app.request('/health/live')).status).toBe(200);
@@ -35,7 +44,9 @@ test('production routing exposes Knowledge validation and datasets while protect
     expect(scientific.status).toBe(422);
     expect(await scientific.json()).toMatchObject({ errorCode: 'HABITAT_FIXTURE_NOT_APPROVED' });
   } finally {
-    if (previous === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = previous;
+    for (const key of keys) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
   }
 });
