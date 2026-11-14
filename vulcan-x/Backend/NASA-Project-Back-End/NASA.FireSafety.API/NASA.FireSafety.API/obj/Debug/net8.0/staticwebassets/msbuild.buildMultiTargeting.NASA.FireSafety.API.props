@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\NASA.FireSafety.API.props" />
+</Project>

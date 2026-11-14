@@ -1,1 +1,11 @@
-{"Version":1,"Hash":"hyyl2M4eON6xwwnVPImK6b0mCcUxVEhECfpcwDt6bI0=","Source":"NASA.FireSafety.API","BasePath":"/","Mode":"Root","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}
+{
+  "Version": 1,
+  "Hash": "m9S7NM30QFaXb4elSrsv1XXPTfdLyYsOmtvGUZUAYJw=",
+  "Source": "NASA.FireSafety.API",
+  "BasePath": "_content/NASA.FireSafety.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

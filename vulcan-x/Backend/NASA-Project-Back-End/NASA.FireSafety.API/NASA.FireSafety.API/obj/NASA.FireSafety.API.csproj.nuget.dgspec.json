@@ -1,36 +1,29 @@
 {
   "format": 1,
   "restore": {
-    "C:\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\NASA.FireSafety.API.csproj": {}
+    "C:\\Users\\Elmodather\\Downloads\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\NASA.FireSafety.API.csproj": {}
   },
   "projects": {
-    "C:\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\NASA.FireSafety.API.csproj": {
+    "C:\\Users\\Elmodather\\Downloads\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\NASA.FireSafety.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\NASA.FireSafety.API.csproj",
+        "projectUniqueName": "C:\\Users\\Elmodather\\Downloads\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\NASA.FireSafety.API.csproj",
         "projectName": "NASA.FireSafety.API",
-        "projectPath": "C:\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\NASA.FireSafety.API.csproj",
-        "packagesPath": "C:\\Users\\basil\\.nuget\\packages\\",
-        "outputPath": "C:\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\obj\\",
+        "projectPath": "C:\\Users\\Elmodather\\Downloads\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\NASA.FireSafety.API.csproj",
+        "packagesPath": "C:\\Users\\Elmodather\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Elmodather\\Downloads\\nasa\\vulcan-x\\Backend\\NASA-Project-Back-End\\NASA.FireSafety.API\\NASA.FireSafety.API\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\basil\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\Elmodather\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
-            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {}
           }
@@ -44,12 +37,10 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "10.0.400"
+        }
       },
       "frameworks": {
         "net8.0": {
-          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "Microsoft.EntityFrameworkCore": {
@@ -96,7 +87,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.403/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.428/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
