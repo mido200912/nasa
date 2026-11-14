@@ -23,7 +23,7 @@ test("live catalog refreshes, searches and follows actual record IDs (declared f
   await expect(page.getByText("No live catalog records match this query.", { exact: true })).toBeVisible();
 });
 
-test("saved Habitat lookup performs GET while live scientific submission stays disabled", async ({ page }) => {
+test("saved Habitat lookup performs GET without needing a new analysis submission", async ({ page }) => {
   await page.route("**/api/backend/environments", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/backend/materials?*", (route) => route.fulfill({ json: { items: [], page: 1, pageSize: 50, totalCount: 0 } }));
   const id = "9d755727-8ca2-4c0a-a78c-4d94d3c1137f";
@@ -32,5 +32,5 @@ test("saved Habitat lookup performs GET while live scientific submission stays d
   await page.getByLabel("Saved analysis ID", { exact: true }).fill(id);
   await page.getByRole("button", { name: "Retrieve analysis", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Saved analysis not found", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Submit persisted Habitat Analysis (scientific fixture required)", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true })).toBeDisabled();
 });

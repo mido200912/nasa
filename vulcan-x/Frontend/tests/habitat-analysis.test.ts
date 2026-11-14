@@ -31,7 +31,7 @@ describe("Habitat Analysis request preparation", () => {
     expect(errors).toMatchObject({ environmentId: expect.any(String), materialId: expect.any(String), oxygenVolumePercent: expect.any(String), pressureKPa: expect.any(String), temperatureCelsius: expect.any(String), gravityRegime: expect.any(String) });
   });
 
-  it("keeps live submission disabled before a scientific fixture is approved", () => {
+  it("respects an operator-disabled AI interpretation workflow", () => {
     const draft = { ...emptyHabitatDraft(17, 23), oxygenVolumePercent: "30", pressureKPa: "70.3", gravityRegime: "Microgravity" as const };
     expect(() => createHabitatRequest(draft, false)).toThrow(HabitatFormError);
     try { createHabitatRequest(draft, false); } catch (error) {
@@ -39,10 +39,16 @@ describe("Habitat Analysis request preparation", () => {
     }
   });
 
-  it("builds the exact backend request only when a future approved fixture enables it", () => {
+  it("accepts explicit user conditions without a scientific approval document", () => {
     const draft = { ...emptyHabitatDraft(17, 23), oxygenVolumePercent: "30", pressureKPa: "70.3", temperatureCelsius: "20", gravityRegime: "Microgravity" as const, effectiveGravityG: "0", language: "en" };
     expect(createHabitatRequest(draft, true)).toEqual({ environmentId: 17, materialId: 23, oxygenVolumePercent: 30, pressureKPa: 70.3, temperatureCelsius: 20, gravityRegime: "Microgravity", effectiveGravityG: 0, additionalParameters: null, language: "en" });
     expect(() => createHabitatRequest({ ...draft, pressureKPa: "" }, true)).toThrow(HabitatFormError);
+  });
+
+  it("enforces the backend storage bounds instead of offering requests the server rejects", () => {
+    expect(validateHabitatDraft({ ...emptyHabitatDraft(17, 23), pressureKPa: "1000000", temperatureCelsius: "1000000", effectiveGravityG: "1000000", gravityRegime: "Microgravity" })).toMatchObject({
+      pressureKPa: expect.any(String), temperatureCelsius: expect.any(String), effectiveGravityG: expect.any(String),
+    });
   });
 });
 

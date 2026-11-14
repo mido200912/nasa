@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mockCatalog } from "./helpers/catalog-fixtures";
 
-// Approval/response fixtures exercise wiring only, never real scientific approval.
+// Response fixtures exercise wiring only, never scientific validation or real inference.
 const id = "9d755727-8ca2-4c0a-a78c-4d94d3c1137f";
 const analysis = {
   id, status: "Completed", requestedAt: "2026-11-14T00:00:00Z",
@@ -13,7 +13,8 @@ const analysis = {
     temperatureCelsius: { value: null, origin: "Missing", measurementBasis: null },
     gravity: { regime: null, effectiveGravityG: null, origin: "Missing" },
   },
-  result: { riskLabel: "Review", analysisBasis: "LlmInterpretationOnly", isMock: false, isScientificallyValidated: false, explanation: "Technical fixture only, not scientific evidence.", limitations: "Unvalidated.", factors: [], citations: [] },
+  result: { riskLabel: null, analysisBasis: "LlmInterpretationOnly", isMock: false, isScientificallyValidated: false, explanation: "Technical fixture only, not scientific evidence.", limitations: "Unvalidated.", factors: [], citations: [] },
+  generation: { mode: "ProviderInference", provider: "openrouter", model: "technical-fixture" },
   error: null, disclaimer: "Not a scientifically validated safety decision.",
 };
 
@@ -99,31 +100,31 @@ for (const width of [320, 768, 1440]) {
   });
 }
 
-test("demo is the default; the separate live gate stays closed and offline simulation remains explicit", async ({ page }) => {
+test("main analysis is the default, never auto-submits, and offline simulation remains explicit", async ({ page }) => {
+  await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ json: { enabled: true } }));
   const localRequests: string[] = [];
   page.on("request", (request) => { if (request.url().includes("/api/v1/simulator")) localRequests.push(request.url()); });
   await page.goto("/dashboard");
-  await expect(page.getByRole("button", { name: "Experimental AI demo", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Live Habitat Analysis", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Experimental AI demo", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Live Habitat Analysis", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("canvas")).toHaveCount(0);
   await prepare(page);
-  await expect(page.getByRole("button", { name: "Submit persisted Habitat Analysis (scientific fixture required)", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true })).toBeEnabled();
   expect(localRequests).toEqual([]);
   await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   await expect(page.getByTestId("stress-test-sync")).toContainText("illustrative");
 });
 
-test("approval lookup errors fail closed and can be refreshed", async ({ page }) => {
+test("availability lookup errors fail closed and can be refreshed", async ({ page }) => {
   await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ status: 503, json: { enabled: true } }));
   await openLive(page);
-  await expect(page.getByText("The backend approval state is unavailable. Live submission remains disabled.", { exact: true })).toBeVisible();
+  await expect(page.getByText("The analysis service status is unavailable. Refresh to check again.", { exact: true })).toBeVisible();
   await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ json: { enabled: false } }));
-  await page.getByRole("button", { name: "Refresh approval status" }).click();
-  await expect(page.getByText(/Live analysis is unavailable until/)).toBeVisible();
+  await page.getByRole("button", { name: "Refresh service status" }).click();
+  await expect(page.getByText(/AI habitat interpretation is disabled by the server operator/)).toBeVisible();
 });
 
-test("approved contract fixture submits only explicit inputs once and renders a persisted result", async ({ page }) => {
+test("main form submits explicit inputs once and renders the saved answer and provenance", async ({ page }) => {
   await page.route("**/api/backend/habitat-analyses/capabilities", (route) => route.fulfill({ json: { enabled: true } }));
   const bodies: unknown[] = [];
   await page.route("**/api/backend/habitat-analyses", async (route) => {
@@ -140,6 +141,7 @@ test("approved contract fixture submits only explicit inputs once and renders a 
   await expect(page.getByRole("heading", { name: "Persisted analysis result" })).toBeVisible();
   expect(bodies).toEqual([{ environmentId: 17, materialId: 23, oxygenVolumePercent: 21, pressureKPa: 101.325, temperatureCelsius: null, gravityRegime: null, effectiveGravityG: null, additionalParameters: null, language: "en" }]);
   await expect(page.locator(".cc-habitat-result")).toContainText("Scientific validation: Not scientifically validated");
+  await expect(page.locator(".cc-habitat-result")).toContainText("openrouter · technical-fixture");
 });
 
 test("backend failures retain their saved ID without inserting a synthetic result", async ({ page }) => {

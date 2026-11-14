@@ -164,7 +164,7 @@ test("reduced-motion playbooks complete immediately and question changes invalid
 });
 
 for (const width of [320, 375, 414, 768, 1024, 1440]) {
-  for (const [path, heading] of [["/dashboard", "Habitat stress-test"], ["/dashboard/playbook", "Safety playbook & research console"], ["/dashboard/earth-bridge", "Earth–space dual-use bridge"], ["/dashboard/materials", "Material & experiment matrix"]]) {
+  for (const [path, heading] of [["/dashboard", "Habitat Analysis"], ["/dashboard/playbook", "Safety playbook & research console"], ["/dashboard/earth-bridge", "Earth–space dual-use bridge"], ["/dashboard/materials", "Material & experiment matrix"]]) {
     test(`${path} fits at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 960 });
       await page.goto(path);

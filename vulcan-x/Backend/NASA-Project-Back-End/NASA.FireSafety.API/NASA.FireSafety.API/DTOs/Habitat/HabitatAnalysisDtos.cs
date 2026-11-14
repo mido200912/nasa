@@ -15,7 +15,8 @@ public sealed class CreateHabitatAnalysisRequest
     [MaxLength(10)] public string? Language { get; init; }
 }
 
-public sealed record HabitatAnalysisResponseDto(Guid Id, string Status, DateTime RequestedAt, HabitatCatalogReferenceDto Environment, HabitatCatalogReferenceDto Material, HabitatInputsDto Inputs, HabitatResultDto? Result, HabitatErrorDto? Error, string Disclaimer);
+public sealed record HabitatAnalysisResponseDto(Guid Id, string Status, DateTime RequestedAt, HabitatCatalogReferenceDto Environment, HabitatCatalogReferenceDto Material, HabitatInputsDto Inputs, HabitatResultDto? Result, HabitatErrorDto? Error, string Disclaimer, HabitatGenerationDto? Generation = null);
+public sealed record HabitatGenerationDto(string Mode, string? Provider, string? Model);
 public sealed record HabitatCatalogReferenceDto(int Id, string Code, string Name);
 public sealed record HabitatInputsDto(InputValueDto OxygenVolumePercent, InputValueDto PressureKPa, InputValueDto TemperatureCelsius, GravityInputDto Gravity);
 public sealed record InputValueDto(decimal? Value, string Origin, string? MeasurementBasis = null);

@@ -13,21 +13,37 @@ namespace NASA.FireSafety.API.Tests;
 public sealed class PersistenceWorkflowTests
 {
     [Fact]
-    public async Task Habitat_PersistsCompletedAnalysisAndMappedFactor()
+    public async Task Habitat_PersistsRealInterpretationAndSourcesWithoutInventedSimulationFactors()
     {
         await using var db = CatalogTestSupport.CreateContext();
         var (environment, material) = await AddCatalogAsync(db);
-        var service = new HabitatAnalysisService(db, new StubAiClient { StressResponse = new StressTestResponse { Success = true, SimulationResult = new StressTestResult { SafetyStatus = "High", IgnitionSpeedMultiplier = 2.5, Recommendation = "AI response." } } });
+        db.ResearchSources.Add(new ResearchSource { Title = "NASA fixture", SourceUrl = "https://www.nasa.gov/fire/", CurationStatus = CurationStatus.ApprovedForDisplay });
+        await db.SaveChangesAsync();
+        var client = new StubAiClient { QueryResponse = HabitatResponse() };
+        var service = new HabitatAnalysisService(db, client);
 
         var result = await service.CreateAsync(new CreateHabitatAnalysisRequest { EnvironmentId = environment.Id, MaterialId = material.Id, OxygenVolumePercent = 21, PressureKPa = 101.325m, GravityRegime = "Microgravity" }, CancellationToken.None);
 
         Assert.Equal("Completed", result.Status);
         Assert.Equal("LlmInterpretationOnly", result.Result!.AnalysisBasis);
-        Assert.Single(result.Result.Factors);
+        Assert.Empty(result.Result.Factors);
+        Assert.Null(result.Result.RiskLabel);
         Assert.False(result.Result.IsScientificallyValidated);
+        Assert.Equal("AI response fixture, not scientific evidence.", result.Result.Explanation);
+        Assert.Equal(2, result.Result.Citations.Count);
+        Assert.Contains(result.Result.Citations, x => x.MatchStatus == "Matched");
+        Assert.Contains(result.Result.Citations, x => x.MatchStatus == "Unmatched");
         var saved = await db.HabitatAnalyses.Include(x => x.Factors).SingleAsync();
         Assert.Equal(AnalysisStatus.Completed, saved.Status);
-        Assert.Single(saved.Factors);
+        Assert.Empty(saved.Factors);
+        Assert.Equal("technical-fixture", saved.ModelName);
+        Assert.Equal("openrouter", saved.ModelVersion);
+        Assert.Equal("habitat-interpretation/1", saved.ContractVersion);
+        var retrieved = await service.GetAsync(result.Id, CancellationToken.None);
+        Assert.Equal(result.Result.Explanation, retrieved!.Result!.Explanation);
+        Assert.Equal("technical-fixture", retrieved.Generation!.Model);
+        Assert.Empty(await db.KnowledgeQueries.ToListAsync());
+        Assert.NotNull(client.LastQuery);
     }
 
     [Fact]
@@ -57,13 +73,93 @@ public sealed class PersistenceWorkflowTests
     {
         await using var db = CatalogTestSupport.CreateContext();
         var (environment, material) = await AddCatalogAsync(db);
-        var service = new HabitatAnalysisService(db, new StubAiClient { StressFailure = VulcanXFailureKind.Unavailable });
+        var service = new HabitatAnalysisService(db, new StubAiClient { QueryFailure = VulcanXFailureKind.Unavailable });
 
         var error = await Assert.ThrowsAsync<PersistedExternalFailureException>(() => service.CreateAsync(new CreateHabitatAnalysisRequest { EnvironmentId = environment.Id, MaterialId = material.Id, OxygenVolumePercent = 21, PressureKPa = 100 }, CancellationToken.None));
 
         var saved = await db.HabitatAnalyses.SingleAsync(x => x.Id == error.RecordId);
         Assert.Equal(AnalysisStatus.Failed, saved.Status);
         Assert.Equal("VULCANX_UNAVAILABLE", saved.ErrorCode);
+    }
+
+    [Theory]
+    [InlineData("ISS", "iss")]
+    [InlineData("LUNAR_HABITAT", "lunar_base")]
+    [InlineData("MARS_HABITAT", "mars_rover")]
+    public async Task Habitat_ForwardsAllConditionsAndOriginsWithoutLosingUnits(string code, string aiEnvironment)
+    {
+        await using var db = CatalogTestSupport.CreateContext();
+        var (environment, material) = await AddCatalogAsync(db);
+        environment.Code = code;
+        await db.SaveChangesAsync();
+        var client = new StubAiClient { QueryResponse = HabitatResponse() };
+        await new HabitatAnalysisService(db, client).CreateAsync(new()
+        {
+            EnvironmentId = environment.Id, MaterialId = material.Id,
+            OxygenVolumePercent = 30, PressureKPa = 70.3m, TemperatureCelsius = 24,
+            GravityRegime = "ReducedGravity", EffectiveGravityG = 0.16m, Language = "en",
+            AdditionalParameters = new() { ["ventilation"] = "unknown" }
+        }, CancellationToken.None);
+        Assert.Equal(aiEnvironment, client.LastQuery!.Environment);
+        foreach (var value in new[] { code, "Test material", "oxygenVolumePercent", "30", "pressureKPa", "70.3", "temperatureCelsius", "24", "ReducedGravity", "0.16", "ventilation", "unknown", "UserProvided" })
+            Assert.Contains(value, client.LastQuery.Question);
+        Assert.InRange(client.LastQuery.Question.Length, 1, 2000);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("LocalFallback")]
+    public async Task Habitat_RejectsUnprovenGenerationAndKeepsOnlyFailedRecord(string? mode)
+    {
+        await using var db = CatalogTestSupport.CreateContext();
+        var (environment, material) = await AddCatalogAsync(db);
+        var response = HabitatResponse();
+        response.Generation = mode is null ? null : new AiGeneration { Mode = mode, Provider = "openrouter", Model = "technical-fixture" };
+        var service = new HabitatAnalysisService(db, new StubAiClient { QueryResponse = response });
+        var error = await Assert.ThrowsAsync<PersistedExternalFailureException>(() => service.CreateAsync(new() { EnvironmentId = environment.Id, MaterialId = material.Id, OxygenVolumePercent = 21, PressureKPa = 100 }, CancellationToken.None));
+        var saved = await service.GetAsync(error.RecordId, CancellationToken.None);
+        Assert.Equal("Failed", saved!.Status);
+        Assert.Null(saved.Result);
+        Assert.Empty(await db.AnalysisCitations.ToListAsync());
+    }
+
+    private static AiQueryResponse HabitatResponse() => new()
+    {
+        Success = true, Answer = "AI response fixture, not scientific evidence.",
+        Sources = ["https://www.nasa.gov/fire/", "Unverified source"],
+        Generation = new AiGeneration { Mode = "ProviderInference", Provider = "openrouter", Model = "technical-fixture" }
+    };
+
+    [Fact]
+    public async Task Habitat_RejectsOversizedCombinedContextBeforePersistenceOrInference()
+    {
+        await using var db = CatalogTestSupport.CreateContext();
+        var (environment, material) = await AddCatalogAsync(db);
+        var client = new StubAiClient { QueryResponse = HabitatResponse() };
+        await Assert.ThrowsAsync<InvalidRequestException>(() => new HabitatAnalysisService(db, client).CreateAsync(new()
+        {
+            EnvironmentId = environment.Id, MaterialId = material.Id, OxygenVolumePercent = 21, PressureKPa = 100,
+            AdditionalParameters = Enumerable.Range(0, 10).ToDictionary(x => $"condition{x}", _ => new string('x', 500))
+        }, CancellationToken.None));
+        Assert.Null(client.LastQuery);
+        Assert.Empty(await db.HabitatAnalyses.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Habitat_InvalidCitationDoesNotPersistPartialAnswerOrSources()
+    {
+        await using var db = CatalogTestSupport.CreateContext();
+        var (environment, material) = await AddCatalogAsync(db);
+        var response = HabitatResponse();
+        response.Sources.Add(new string('x', 501));
+        var service = new HabitatAnalysisService(db, new StubAiClient { QueryResponse = response });
+        var error = await Assert.ThrowsAsync<PersistedExternalFailureException>(() => service.CreateAsync(new()
+        { EnvironmentId = environment.Id, MaterialId = material.Id, OxygenVolumePercent = 21, PressureKPa = 100 }, CancellationToken.None));
+        var saved = await db.HabitatAnalyses.SingleAsync(x => x.Id == error.RecordId);
+        Assert.Equal(AnalysisStatus.Failed, saved.Status);
+        Assert.Null(saved.Explanation);
+        Assert.Null(saved.ModelName);
+        Assert.Empty(await db.AnalysisCitations.ToListAsync());
     }
 
     [Fact]
@@ -182,7 +278,8 @@ public sealed class PersistenceWorkflowTests
         public AiQueryResponse? QueryResponse { get; init; }
         public VulcanXFailureKind? StressFailure { get; init; }
         public VulcanXFailureKind? QueryFailure { get; init; }
-        public Task<AiQueryResponse> QueryAsync(AiQueryRequest request, CancellationToken cancellationToken) { Cancel?.Cancel(); cancellationToken.ThrowIfCancellationRequested(); return QueryFailure is { } failure ? throw new VulcanXServiceException(failure, "failure") : Task.FromResult(QueryResponse ?? new AiQueryResponse()); }
+        public AiQueryRequest? LastQuery { get; private set; }
+        public Task<AiQueryResponse> QueryAsync(AiQueryRequest request, CancellationToken cancellationToken) { LastQuery = request; Cancel?.Cancel(); cancellationToken.ThrowIfCancellationRequested(); return QueryFailure is { } failure ? throw new VulcanXServiceException(failure, "failure") : Task.FromResult(QueryResponse ?? new AiQueryResponse()); }
         public Task<StressTestResponse> RunStressTestAsync(StressTestRequest request, CancellationToken cancellationToken) { Cancel?.Cancel(); cancellationToken.ThrowIfCancellationRequested(); return StressFailure is { } failure ? throw new VulcanXServiceException(failure, "failure") : Task.FromResult(StressResponse ?? new StressTestResponse()); }
         public Task<HazardEvaluationResponse> EvaluateHazardAsync(HazardEvaluationRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<DatasetCatalogResponse> GetDatasetsAsync(CancellationToken cancellationToken) => throw new NotSupportedException();

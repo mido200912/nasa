@@ -124,17 +124,17 @@ test.describe("live SQL integration", () => {
     await testInfo.attach("live-api-network-no-secrets", { body: JSON.stringify({ network, queryId: problem.queryId, providerInferenceVerified: false }), contentType: "application/json" });
   });
 
-  test("scientific fixture gate remains closed in the browser and backend", async ({ page, request }) => {
+  test("main analysis requires explicit oxygen and pressure conditions", async ({ page, request }) => {
     const environments = await (await request.get("/api/backend/environments")).json();
     const materials = await (await request.get("/api/backend/materials")).json();
     await page.goto("/dashboard");
     await page.getByRole("button", { name: "Live Habitat Analysis", exact: true }).click();
     await expect(page.locator("#habitat-oxygen")).toHaveValue("");
     await expect(page.locator("#habitat-pressure")).toHaveValue("");
-    await expect(page.getByRole("button", { name: "Submit persisted Habitat Analysis (scientific fixture required)", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Submit persisted Habitat Analysis", exact: true })).toBeDisabled();
     const response = await request.post("/api/backend/habitat-analyses", { data: { environmentId: environments[0].id, materialId: materials.items[0].id } });
     expect(response.status()).toBe(422);
-    expect((await response.json()).errorCode).toBe("HABITAT_FIXTURE_NOT_APPROVED");
+    expect((await response.json()).errorCode).toBe("AI_REQUIRED_INPUT_MISSING");
   });
 
   test("retrieves an actual failed provider record without making another model request", async ({ page, request }) => {

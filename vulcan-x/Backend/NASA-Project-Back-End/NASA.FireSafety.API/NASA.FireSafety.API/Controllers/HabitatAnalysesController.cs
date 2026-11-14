@@ -14,15 +14,14 @@ public sealed class HabitatAnalysesController(IHabitatAnalysisService service, I
     public ActionResult GetCapabilities()
     {
         Response.Headers.CacheControl = "no-store";
-        // Configuration is the existing approval gate, not a declaration of model validation or readiness.
-        return Ok(new { enabled = submission.Value.Enabled });
+        return Ok(new { enabled = submission.Value.InterpretationEnabled, mode = "AiInterpretation", isScientificallyValidated = false });
     }
 
     [HttpPost]
     public async Task<ActionResult<HabitatAnalysisResponseDto>> Create([FromBody] CreateHabitatAnalysisRequest request, CancellationToken cancellationToken)
     {
-        if (!submission.Value.Enabled)
-            return Problem(StatusCodes.Status422UnprocessableEntity, "Live Habitat submission is disabled", "A science-team-approved scientific fixture is required before live submission can be enabled.", "HABITAT_FIXTURE_NOT_APPROVED");
+        if (!submission.Value.InterpretationEnabled)
+            return Problem(StatusCodes.Status422UnprocessableEntity, "Habitat analysis is disabled", "AI habitat interpretation is disabled by the server operator.", "HABITAT_INTERPRETATION_DISABLED");
         try { return StatusCode(StatusCodes.Status201Created, await service.CreateAsync(request, cancellationToken)); }
         catch (CatalogRecordNotFoundException exception) { return Problem(StatusCodes.Status404NotFound, "Catalog record was not found", exception.Resource, "CATALOG_NOT_FOUND"); }
         catch (ScientificInputRequiredException exception) { return Problem(StatusCodes.Status422UnprocessableEntity, "Required scientific input is missing", exception.Message, "AI_REQUIRED_INPUT_MISSING"); }

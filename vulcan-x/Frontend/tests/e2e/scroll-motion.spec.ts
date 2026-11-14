@@ -61,7 +61,7 @@ test("scrolling suspends continuous WebGL and returns to normal when idle", asyn
   await expect(page.locator(".orbital-canvas")).toHaveAttribute("data-rendering", "active");
   await page.getByRole("link", { name: "Launch simulator", exact: false }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: "Habitat stress-test", exact: true })).toBeInViewport();
+  await expect(page.getByRole("heading", { name: "Habitat Analysis", exact: true })).toBeInViewport();
   await page.getByRole("button", { name: "Offline simulation", exact: true }).click();
   // Catalog selectors now precede the educational sliders; reach the control
   // through ordinary scrolling rather than assuming its pre-integration position.
