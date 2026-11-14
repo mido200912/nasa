@@ -41,3 +41,25 @@ test('isolated provider timing events contain durations and categories, never cr
     expect(messages.join('\n')).not.toContain('private-provider-detail');
   } finally { globalThis.fetch = originalFetch; log.mockRestore(); warn.mockRestore(); }
 });
+
+test('rejected provider responses report only safe completion metadata, not reasoning or final text', async () => {
+  const originalFetch = globalThis.fetch;
+  const messages: string[] = [];
+  const warn = spyOn(console, 'warn').mockImplementation(value => { messages.push(String(value)); });
+  const slot = { index: 1, key: 'technical-test-credential-only', provider: 'openrouter' as const, baseUrl: 'https://provider.invalid/api/v1', model: 'technical-model' };
+  try {
+    globalThis.fetch = mock(async () => Response.json({
+      model: slot.model,
+      choices: [{ finish_reason: 'length', message: { content: '', reasoning: 'private-thinking-do-not-log' } }],
+      usage: { completion_tokens: 2048, completion_tokens_details: { reasoning_tokens: 2048 } },
+    })) as unknown as typeof fetch;
+    await expect(new AiProviderService([slot]).generateCompletion('private-question-do-not-log')).rejects.toThrow();
+    const event = messages.filter(value => value.startsWith('{"event":"provider_response_rejected"')).map(value => JSON.parse(value))[0];
+    expect(event).toEqual({
+      event: 'provider_response_rejected', provider: 'openrouter', finalAnswerPresent: false,
+      finishReason: 'length', completionTokens: 2048, reasoningTokens: 2048,
+    });
+    for (const secret of [slot.key, 'private-thinking-do-not-log', 'private-question-do-not-log'])
+      expect(messages.join('\n')).not.toContain(secret);
+  } finally { globalThis.fetch = originalFetch; warn.mockRestore(); }
+});

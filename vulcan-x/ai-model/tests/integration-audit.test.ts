@@ -38,6 +38,37 @@ test('reasoning-only output is never returned as a user-facing answer', async ()
   await expect(new AiProviderService([slot]).generateCompletion('Technical fixture')).rejects.toThrow();
 });
 
+test.each(['nvidia/nemotron-3.5-lightning:free', 'nvidia/nemotron-3.5-lightning'])('optional reasoning is disabled for %s without changing prompts or model', async (model) => {
+  globalThis.fetch = mock(async (_url, init) => {
+    const request = JSON.parse(init!.body as string);
+    expect(request.model).toBe(model);
+    expect(request.reasoning).toEqual({ enabled: false });
+    expect(request.messages).toEqual([
+      { role: 'system', content: 'Technical system fixture.' },
+      { role: 'user', content: 'Technical question fixture.' },
+    ]);
+    return Response.json({ model, choices: [{ finish_reason: 'stop', message: { content: 'Technical final answer.' } }] });
+  }) as unknown as typeof fetch;
+  const result = await new AiProviderService([{ ...slot, model }]).generateCompletion('Technical question fixture.', 'Technical system fixture.');
+  expect(result.text).toBe('Technical final answer.');
+});
+
+test('other configured models keep their existing reasoning behavior', async () => {
+  globalThis.fetch = mock(async (_url, init) => {
+    expect(JSON.parse(init!.body as string).reasoning).toBeUndefined();
+    return Response.json({ model: slot.model, choices: [{ finish_reason: 'stop', message: { content: 'Technical final answer.' } }] });
+  }) as unknown as typeof fetch;
+  await new AiProviderService([slot]).generateCompletion('Technical fixture.');
+});
+
+test.each([
+  { finish_reason: 'length', message: { content: 'Truncated private output.', reasoning: 'Private reasoning.' } },
+  { finish_reason: 'stop', message: { content: '', reasoning: 'Private reasoning.' } },
+])('disabling optional reasoning never makes a truncated or absent final answer acceptable: %j', async (choice) => {
+  globalThis.fetch = mock(async () => Response.json({ model: 'nvidia/nemotron-3.5-lightning:free', choices: [choice] })) as unknown as typeof fetch;
+  await expect(new AiProviderService([{ ...slot, model: 'nvidia/nemotron-3.5-lightning:free' }]).generateCompletion('Technical fixture.')).rejects.toThrow();
+});
+
 test('missing or oversized actual model identity is rejected, not replaced by the configured model', async () => {
   for (const model of [undefined, 'x'.repeat(101)]) {
     globalThis.fetch = mock(async () => Response.json({ model, choices: [{ finish_reason: 'stop', message: { content: 'Technical final answer fixture.' } }] })) as unknown as typeof fetch;

@@ -36,6 +36,13 @@ Knowledge uses locally indexed corpus excerpts and NASA link intelligence as con
 
 Provider operations accept caller cancellation without rotating keys on cancellation. Per-key attempts are bounded at 40 seconds and the overall provider operation at 55 seconds; the ASP.NET AI budget defaults to 60 seconds and Next.js to 75 seconds. Hazard explanation requests additionally cancel actual provider work after 8 seconds instead of leaving a losing promise running. No numerical simulation formula or scientific validation claim was added by the Milestone 6 changes.
 
+For the configured `nvidia/nemotron-3.5-lightning` model (including `:free`),
+requests disable its optional reasoning so thinking does not consume the
+bounded final-answer budget. Other models retain their existing behavior.
+Keep `OPENROUTER_MAX_OUTPUT_TOKENS` sufficient for a complete answer; truncation
+and reasoning-only output are still errors, never silently accepted as success.
+Rejected responses log only safe finish-reason/token-count metadata, not content.
+
 Run `bun install --frozen-lockfile` and `bun test`. Cancellation tests use a controlled fake transport, not paid inference. For complete SQL/browser evidence and remaining scientific/deployment gates, see `../Backend/NASA-Project-Back-End/docs/integration/milestone-5-6-report.md`.
 
 **Vulcan-X** is an AI-powered combustion data analytics and fire safety engine designed to interpret NASA **Physical Science Informatics (PSI)** combustion experiments (including **BASS, Saffire, ACME, FLEX, and CFI**). 

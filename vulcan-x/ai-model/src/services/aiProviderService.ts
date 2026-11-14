@@ -179,6 +179,10 @@ export class AiProviderService {
           ],
           temperature: 0.2, // Low temperature for scientific precision & zero hallucination
           max_tokens: env.MAX_OUTPUT_TOKENS,
+          // Nemotron Lightning exposes optional reasoning. Reserve this bounded
+          // educational request's output budget for the final answer, not thinking.
+          ...(slot.config.model.split(':')[0] === 'nvidia/nemotron-3.5-lightning'
+            ? { reasoning: { enabled: false } } : {}),
         }),
         signal: AbortSignal.any([signal, AbortSignal.timeout(env.PROVIDER_ATTEMPT_TIMEOUT_MS)]),
         redirect: 'error',
@@ -217,7 +221,18 @@ export class AiProviderService {
       // is substituted with local text and called successful inference.
       if (typeof content !== 'string' || !content.trim() || content.length > 100_000
         || (choice.finish_reason && choice.finish_reason !== 'stop')
-        || typeof data.model !== 'string' || !data.model.trim() || data.model.length > 100) throw new ProviderResponseError();
+        || typeof data.model !== 'string' || !data.model.trim() || data.model.length > 100) {
+        // Bounded metadata only. Never log final text, reasoning text, prompts or keys.
+        const count = (value: unknown) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null;
+        console.warn(JSON.stringify({
+          event: 'provider_response_rejected', provider: 'openrouter',
+          finalAnswerPresent: typeof content === 'string' && Boolean(content.trim()),
+          finishReason: ['stop', 'length', 'content_filter', 'tool_calls', 'error'].includes(choice?.finish_reason) ? choice.finish_reason : 'unknown',
+          completionTokens: count(data?.usage?.completion_tokens),
+          reasoningTokens: count(data?.usage?.completion_tokens_details?.reasoning_tokens),
+        }));
+        throw new ProviderResponseError();
+      }
       console.log(JSON.stringify({ event: 'provider_completed', provider: 'openrouter', durationMs: Math.round(performance.now() - attemptStarted) }));
       return { text: content.trim(), model: data.model };
     } catch (err: any) {
